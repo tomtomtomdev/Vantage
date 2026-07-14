@@ -1,0 +1,35 @@
+# golangci-lint v2 config. The fast gate for the dependency rule (CLAUDE.md §3):
+# depguard denies adapter/framework/pgx/net-http imports inside the pure core.
+# The go/packages arch-test (make arch) is the belt-and-braces backstop.
+version: "2"
+
+linters:
+  enable:
+    - depguard      # architecture boundaries (the load-bearing one here)
+    - errcheck      # no swallowed errors (go-idioms sin #4)
+    - govet
+    - bodyclose     # close every HTTP response body
+    - contextcheck  # ctx propagated, not dropped
+    - ineffassign
+    - unconvert
+  settings:
+    depguard:
+      rules:
+        core-purity:
+          # The pure core must not depend on adapters or frameworks.
+          files:
+            - "**/internal/domain/**"
+            - "**/internal/verdict/**"
+          deny:
+            - pkg: plumber/internal/adapters
+              desc: "domain/verdict must not import adapters — dependencies point inward (CLAUDE §3)"
+            - pkg: github.com/jackc/pgx
+              desc: "domain/verdict must be pure — no pgx"
+            - pkg: github.com/spf13/cobra
+              desc: "domain/verdict must be pure — no cobra"
+            - pkg: net/http
+              desc: "domain/verdict must be pure — no net/http"
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

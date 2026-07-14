@@ -1,0 +1,32 @@
+# Binaries (anchored: a bare `plumber` would also match the cmd/plumber/ source dir)
+/bin/
+/plumber
+*.exe
+
+# Test & coverage output
+coverage.out
+*.out
+*.test
+*.prof
+
+# Secrets — never commit (SPEC review #5). targets.auth is encrypted/reference-only.
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# macOS
+.DS_Store
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+
+# Design handoff: extracted working copies (the .zip is the source of truth)
+/design_handoff_*/
+
+# Go workspace
+go.work
+go.work.sum
