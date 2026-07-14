@@ -15,7 +15,7 @@
 
 | Slice | State | Notes |
 |---|---|---|
-| S0 walking skeleton | 🟨 in progress | arch-test ✅ (depguard + go/list guard, proven red→green); next: migrations §6, pgx ResultStore, `target add\|list` |
+| S0 walking skeleton | 🟨 in progress | arch-test ✅ · `domain.Target` ✅ (safe-by-default flags); next (needs net+Docker): migrations §6, pgx ResultStore, `target add\|list` |
 | S1 black-box load → number+variance | ⬜ not started | MVP · L · the open-model driver |
 | S2 SLO + Judge | ⬜ not started | MVP · S |
 | S3 baseline + Compare (bootstrap CI) | ⬜ not started | MVP · M · **stop-and-use gate** |
@@ -50,6 +50,12 @@ Legend: ⬜ not started · 🟨 in progress · ✅ done+green.
 > _(empty)_
 
 ## Session log
+
+### 2026-07-14 — S0: domain.Target (test-first, pure)
+- `internal/domain/target.go` + table-driven tests (stdlib — testify deferred, proxy offline; keeps the pure core dep-free). `NewTarget` validates name/URL/mode and refuses invalid states at construction; `Mode` enum; functional options `WithMutating`/`WithAllowlisted`.
+- **Safe-by-default:** the zero value is not-mutating and not-allowlisted, so the dangerous states (SPEC §9) are opt-in and greppable at call sites.
+- Uses `net/url` (pure parsing) — arch-test stays green, confirming the guard forbids `net/http` specifically, not all of `net`.
+- Red→green: test failed to compile (undefined NewTarget) → implemented → `go test -race` green; build/vet/fmt/arch all green.
 
 ### 2026-07-14 — S0 begins: arch-test (the boundary is now real)
 - `internal/arch/arch_test.go` (`//go:build archtest`) loads each pure-core package's transitive import graph via `go list -deps -json` and fails on any `adapters/`, `pgx`, `cobra`, or `net/http` import. Chose the toolchain shell-out over `golang.org/x/tools/go/packages` — the proxy is offline, and the dep-free version keeps the pure core's own module graph trivially provable. Belt-and-braces alongside depguard (`.golangci.yml`), which is the fast gate.
