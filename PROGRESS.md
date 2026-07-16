@@ -6,8 +6,8 @@
 
 ## Status at a glance
 
-- **Phase:** S0 nearly complete. Walking skeleton runs: `plumber migrate` and `plumber target add|list` work against Postgres.
-- **Next action:** run the integration suite once against Docker (`make int`) to confirm the schema/store tests pass locally, then start S1 (open-model load driver).
+- **Phase:** S1 implemented and green (unit + driver measurement-integrity + arch). `plumber run` drives an open-model constant load, measures N success-only reps, and persists an immutable Run with an env fingerprint.
+- **Next action:** run `make int` against Docker once (validates S0 store + S1 `SaveRun` round-trip; both compile but were not executed — Docker down here), then start S2 (SLO + Judge).
 - **MVP target:** S0–S3 → move a real p99 on Sluice's OHLC/VWAP pipeline, logged below.
 - **Blocked on nothing.** F1/F2 resolved; F3 not needed until S5.
 
@@ -16,7 +16,7 @@
 | Slice | State | Notes |
 |---|---|---|
 | S0 walking skeleton | 🟨 nearly done | arch-test ✅ · `domain.Target` ✅ · migrations §6 + idempotent runner ✅ · pgx `TargetStore` ✅ · `migrate` + `target add\|list` CLI ✅ · unit+arch green. **Remaining:** run `make int` against Docker (integration tests compile but weren't executed here — Docker was down). |
-| S1 black-box load → number+variance | ⬜ not started | MVP · L · the open-model driver |
+| S1 black-box load → number+variance | 🟨 impl green | MVP · L · open-model driver ✅ (coordinated-omission/warmup-discard/success-only/overhead tests, `-race`+`goleak`) · `internal/hist` HDR wrapper ✅ · guards (allowlist/mutating/rate-ceiling/kill-switch) ✅ · `RunService` N-reps orchestration ✅ · pgx `SaveRun`+`GetTargetByName` ✅ · env fingerprint (`HostProbe`) ✅ · `plumber run` CLI ✅ · unit+arch green. **Remaining:** `make int` under Docker (SaveRun round-trip compiles, not executed); first real Sluice run. |
 | S2 SLO + Judge | ⬜ not started | MVP · S |
 | S3 baseline + Compare (bootstrap CI) | ⬜ not started | MVP · M · **stop-and-use gate** |
 | S4 ramp + knee | ⬜ not started | M |
@@ -50,6 +50,18 @@ Legend: ⬜ not started · 🟨 in progress · ✅ done+green.
 > _(empty)_
 
 ## Session log
+
+### 2026-07-16 — S1: open-model load driver → Run with variance (impl green)
+- **`internal/hist`** — pure HDR wrapper over `HdrHistogram/hdrhistogram-go` (µs internally, ms out; gob of `Snapshot` into `reps.histogram`). Records now, resampled by `verdict` in S3. Kept out of `domain` so the pure core takes no histogram dependency; arch-test unaffected.
+- **Driver (`adapters/loaddriver`) — the crown jewel.** Fixed-schedule producer emits intended-dispatch timestamps into a jobs channel buffered to N, so **arrivals never gate on completion** (coordinated-omission fix); latency = `completion − intended_dispatch`; bounded worker pool; single collector builds a **success-only** histogram + a separate error tally; warmup classified by intended time and discarded; driver overhead = mean scheduling delay. Every goroutine has an owner + ctx exit (kill switch); sender-closes-channel. **Measurement-integrity tests are the spec:** coordinated-omission (slow stub → tail reflects queueing, achieved < requested), warmup-discard (deterministic-by-index count), success-only + errors-tallied, overhead-recorded — all under `-race` + `goleak` (`httptest` targets, no real network). Guards refuse before load: non-allowlisted → `ErrTargetNotAllowlisted`, mutating → `ErrMutatingRefused`, over ceiling → `ErrRateCeiling`.
+- **Domain:** `LoadProfile` (constant) + `NewConstantProfile`/`ParseProfile` (pure, table-tested); `Run`/`RepResult`/`EnvFingerprint`; `Run.Validate` (N≥1, rep-count match); guard sentinels. N=1 legal (no-significance) but storable.
+- **Ports (consumer-owned):** `LoadDriver`, `ResultStore` (SaveRun only — Get/baseline land in S3 when consumed), `EnvProbe`; `TargetStore` grew `GetTargetByName`.
+- **Store:** `SaveRun` inserts run + N reps in one tx (profile/env as jsonb, histogram bytea), refusing a malformed Run before touching the DB; `GetTargetByName` maps missing → `domain.ErrTargetNotFound`. Integration tests written+tagged.
+- **App:** `RunService` — lookup target → N × driver.Run (seq-stamped) → env probe → assemble+persist immutable Run; a refused/failed rep persists nothing. `Summarise` merges per-rep histograms for pooled percentiles and computes the **exact** pooled error rate from success counts + tallies (never folds errors into latency).
+- **CLI:** `plumber run <target> --profile constant:rps=…,dur=…,warmup=… --reps N [--max-rps 1000] [--allow-mutating] [--workers] [--request-timeout] [--version-marker] [--label] [--colocation]`. Prints per-rep + pooled `p50/p90/p99/p99.9/max`, error rate (co-equal axis), achieved rps, and driver overhead. Wired by hand at the composition root; profile parse fails before any DB connect.
+- **Green here:** `go build`, `go vet` (incl. `-tags=integration`), `gofmt -s`, `go test -race ./...`, `make arch`. CLI smoke: `run --help`, bad-profile, missing-DSN all clean.
+- **⚠️ Gaps (carried, same as S0):** Docker down → `make int` (SaveRun round-trip, jsonb encoding) compiled but **not executed**. `golangci-lint` not on PATH here (CI/`make tools`). Secrets-at-rest gate (review #5) still open — S1 only ran against local/httptest, no non-local target yet; **land encryption before pointing at any real auth'd Sluice.** Request template is GET-to-base-URL for now (bodies/headers/auth when a real target needs them).
+- **Next:** `make int` on a Docker host + first real Sluice `run`; then S2 (SLO + `Judge`).
 
 ### 2026-07-16 — S0: schema + store + CLI (walking skeleton runs)
 - **Migrations (§6):** all eight SPEC tables as numbered SQL (`0001`–`0008`) + `0009` immutability. Two invariants moved from doc to schema (CLAUDE §8): evidence tables (`runs`/`reps`/`exemplars`/`spans`/`query_attrib`) raise on UPDATE/DELETE via trigger; `targets.auth` CHECK rejects plaintext `token`/`password`/`bearer`/`secret` keys (secrets gate, SPEC review #5) while allowing `secret_ref`/encrypted envelopes.

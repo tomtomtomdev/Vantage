@@ -29,8 +29,8 @@ func TestCommandTree(t *testing.T) {
 	}
 
 	top := has("")
-	if !top["migrate"] || !top["target"] {
-		t.Fatalf("root subcommands = %v, want migrate + target", top)
+	if !top["migrate"] || !top["target"] || !top["run"] {
+		t.Fatalf("root subcommands = %v, want migrate + target + run", top)
 	}
 	sub := has("target")
 	if !sub["add"] || !sub["list"] {
@@ -46,6 +46,10 @@ func TestTargetAddValidation(t *testing.T) {
 	}{
 		{"missing name", []string{"target", "add", "--url", "http://x"}, "arg"},
 		{"missing required url", []string{"target", "add", "sluice"}, "url"},
+		{"run missing target name", []string{"run", "--profile", "constant:rps=1,dur=1s"}, "arg"},
+		{"run missing profile", []string{"run", "sluice"}, "profile"},
+		// A malformed profile is rejected before any DB connection (domain-pure parse).
+		{"run bad profile", []string{"run", "sluice", "--profile", "ramp:x=1"}, "profile"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
