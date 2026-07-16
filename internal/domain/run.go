@@ -22,6 +22,15 @@ var (
 // ErrRunInvalid is the sentinel for a malformed Run aggregate.
 var ErrRunInvalid = errors.New("run: invalid")
 
+// Run/baseline lookup sentinels — inspected with errors.Is at the boundary so the
+// CLI can render a friendly message instead of leaking a store-level error.
+var (
+	// ErrRunNotFound: no run with the given id.
+	ErrRunNotFound = errors.New("run: not found")
+	// ErrNoBaseline: the target has no baseline set — a delta needs one (SPEC §8).
+	ErrNoBaseline = errors.New("baseline: none set for target — `plumber baseline set <run>` first")
+)
+
 // EnvFingerprint captures the conditions a Run was measured under, so Compare can
 // downgrade to `confounded` on drift (SPEC §7/§8) — precision is not causation.
 // Host and Colocation are always captured; Extra holds target-specific probe data
