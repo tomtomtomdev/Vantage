@@ -16,4 +16,7 @@ type TargetStore interface {
 	AddTarget(ctx context.Context, t domain.Target) (int64, error)
 	// ListTargets returns all targets, oldest first.
 	ListTargets(ctx context.Context) ([]domain.Target, error)
+	// GetTargetByName returns the target with the given name and its id. It
+	// returns domain.ErrTargetNotFound if no such target exists.
+	GetTargetByName(ctx context.Context, name string) (domain.Target, int64, error)
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
 	"plumber/internal/domain"
@@ -65,6 +66,30 @@ func (s *PgStore) ListTargets(ctx context.Context) ([]domain.Target, error) {
 		return nil, fmt.Errorf("iterating targets: %w", err)
 	}
 	return targets, nil
+}
+
+// GetTargetByName returns the named target and its id, mapping a missing row to
+// domain.ErrTargetNotFound so callers inspect with errors.Is rather than checking
+// pgx.ErrNoRows.
+func (s *PgStore) GetTargetByName(ctx context.Context, name string) (domain.Target, int64, error) {
+	var (
+		id   int64
+		t    domain.Target
+		mode string
+	)
+	err := s.pool.QueryRow(ctx, `
+		SELECT id, name, base_url, mode, mutating, allowlisted
+		FROM targets
+		WHERE name = $1`, name,
+	).Scan(&id, &t.Name, &t.BaseURL, &mode, &t.Mutating, &t.Allowlisted)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return domain.Target{}, 0, fmt.Errorf("%w: %q", domain.ErrTargetNotFound, name)
+		}
+		return domain.Target{}, 0, fmt.Errorf("querying target %q: %w", name, err)
+	}
+	t.Mode = domain.Mode(mode)
+	return t, id, nil
 }
 
 // compile-time proof the pgx adapter satisfies the consumer-owned port.

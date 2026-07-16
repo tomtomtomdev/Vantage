@@ -29,6 +29,15 @@ func (f *fakeTargetStore) ListTargets(context.Context) ([]domain.Target, error) 
 	return f.added, nil
 }
 
+func (f *fakeTargetStore) GetTargetByName(_ context.Context, name string) (domain.Target, int64, error) {
+	for i, t := range f.added {
+		if t.Name == name {
+			return t, int64(i + 1), nil
+		}
+	}
+	return domain.Target{}, 0, domain.ErrTargetNotFound
+}
+
 func TestTargetServiceAdd(t *testing.T) {
 	t.Run("validates in the domain and persists a well-formed target", func(t *testing.T) {
 		store := &fakeTargetStore{}
