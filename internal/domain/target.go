@@ -45,6 +45,9 @@ var (
 	ErrTargetNameRequired = errors.New("target: name required")
 	ErrTargetBaseURL      = errors.New("target: base_url must be an absolute http(s) URL")
 	ErrTargetModeInvalid  = errors.New("target: mode must be black-box or white-box")
+	// ErrTargetExists is returned by a TargetStore when a target name is already
+	// taken — names are the human handle and must be unique.
+	ErrTargetExists = errors.New("target: name already exists")
 )
 
 // TargetOption opts a Target into a less-safe state at the call site, so the
