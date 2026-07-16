@@ -29,12 +29,16 @@ func TestCommandTree(t *testing.T) {
 	}
 
 	top := has("")
-	if !top["migrate"] || !top["target"] || !top["run"] {
-		t.Fatalf("root subcommands = %v, want migrate + target + run", top)
+	if !top["migrate"] || !top["target"] || !top["run"] || !top["slo"] {
+		t.Fatalf("root subcommands = %v, want migrate + target + run + slo", top)
 	}
 	sub := has("target")
 	if !sub["add"] || !sub["list"] {
 		t.Fatalf("target subcommands = %v, want add + list", sub)
+	}
+	slo := has("slo")
+	if !slo["set"] || !slo["list"] {
+		t.Fatalf("slo subcommands = %v, want set + list", slo)
 	}
 }
 
@@ -50,6 +54,9 @@ func TestTargetAddValidation(t *testing.T) {
 		{"run missing profile", []string{"run", "sluice"}, "profile"},
 		// A malformed profile is rejected before any DB connection (domain-pure parse).
 		{"run bad profile", []string{"run", "sluice", "--profile", "ramp:x=1"}, "profile"},
+		{"slo set missing target name", []string{"slo", "set", "--metric", "p99", "--threshold", "150", "--unit", "ms", "--comparator", "<="}, "arg"},
+		{"slo set missing required metric", []string{"slo", "set", "sluice", "--threshold", "150", "--unit", "ms", "--comparator", "<="}, "metric"},
+		{"slo list missing target name", []string{"slo", "list"}, "arg"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

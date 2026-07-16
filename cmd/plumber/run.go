@@ -12,6 +12,7 @@ import (
 	"plumber/internal/app"
 	"plumber/internal/domain"
 	"plumber/internal/platform"
+	"plumber/internal/verdict"
 )
 
 // newRunCmd is the S1 vertical seam: drive an open-model constant load against a
@@ -58,7 +59,7 @@ func newRunCmd() *cobra.Command {
 			})
 			defer driver.CloseIdleConns()
 
-			svc := app.NewRunService(st, driver, st, platform.NewHostProbe(colocation))
+			svc := app.NewRunService(st, driver, st, platform.NewHostProbe(colocation), st)
 			res, err := svc.Run(ctx, app.RunParams{
 				TargetName:    args[0],
 				Profile:       profile,
@@ -108,4 +109,44 @@ func printRun(cmd *cobra.Command, p domain.LoadProfile, res app.RunResult) {
 
 	cmd.Printf("\ndriver overhead: %.2fms (worst rep) — distrust the run if this is large or achieved rps << requested\n",
 		s.DriverOverheadMs)
+
+	printVerdicts(cmd, res.Verdicts)
+}
+
+// printVerdicts renders the per-metric PASS/FAIL against the target's declared
+// SLOs (SPEC §7). A target with no SLO gets a hint, not a fabricated verdict —
+// a PASS/FAIL requires a declared threshold (SPEC §8).
+func printVerdicts(cmd *cobra.Command, verdicts verdict.Verdicts) {
+	if len(verdicts) == 0 {
+		cmd.Println("\nno SLO declared for this target — run `plumber slo set` to get a PASS/FAIL verdict")
+		return
+	}
+
+	overall := "PASS"
+	if !verdicts.AllPass() {
+		overall = "FAIL"
+	}
+	cmd.Printf("\nSLO verdict: %s\n", overall)
+
+	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "METRIC\tSLO\tACTUAL\t@RPS\tRESULT")
+	for _, v := range verdicts {
+		atRPS := "—"
+		if v.SLO.AtRPS > 0 {
+			atRPS = fmt.Sprintf("%.0f", v.SLO.AtRPS)
+		}
+		fmt.Fprintf(w, "%s\t%s %g%s\t%g %s\t%s\t%s\n",
+			v.SLO.Metric, v.SLO.Comparator, v.SLO.Threshold, unitSuffix(v.SLO.Unit),
+			v.Actual, v.SLO.Unit, atRPS, v.Status)
+	}
+	_ = w.Flush()
+}
+
+// unitSuffix renders the unit adjacent to the threshold ("150ms", "0.1%"),
+// spacing rps so "200 rps" stays readable.
+func unitSuffix(unit string) string {
+	if unit == "rps" {
+		return " rps"
+	}
+	return unit
 }

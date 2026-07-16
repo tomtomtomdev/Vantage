@@ -6,8 +6,8 @@
 
 ## Status at a glance
 
-- **Phase:** S1 implemented and green (unit + driver measurement-integrity + arch). `plumber run` drives an open-model constant load, measures N success-only reps, and persists an immutable Run with an env fingerprint.
-- **Next action:** run `make int` against Docker once (validates S0 store + S1 `SaveRun` round-trip; both compile but were not executed — Docker down here), then start S2 (SLO + Judge).
+- **Phase:** S2 implemented and green (unit + arch). `plumber slo set|list` declares generic SLOs; `verdict.Judge` renders per-metric PASS/FAIL; `plumber run` now ends with an SLO verdict table (or a hint when none declared). S1 still stands: open-model constant load → immutable Run + env fingerprint.
+- **Next action:** run `make int` against Docker once (validates S0 store + S1 `SaveRun` + S2 `SetSLO`/`SLOsForTarget` round-trips; all compile but were not executed — Docker down here), then start S3 (baseline + `Compare` bootstrap CI — the MVP stop-and-use gate).
 - **MVP target:** S0–S3 → move a real p99 on Sluice's OHLC/VWAP pipeline, logged below.
 - **Blocked on nothing.** F1/F2 resolved; F3 not needed until S5.
 
@@ -17,7 +17,7 @@
 |---|---|---|
 | S0 walking skeleton | 🟨 nearly done | arch-test ✅ · `domain.Target` ✅ · migrations §6 + idempotent runner ✅ · pgx `TargetStore` ✅ · `migrate` + `target add\|list` CLI ✅ · unit+arch green. **Remaining:** run `make int` against Docker (integration tests compile but weren't executed here — Docker was down). |
 | S1 black-box load → number+variance | 🟨 impl green | MVP · L · open-model driver ✅ (coordinated-omission/warmup-discard/success-only/overhead tests, `-race`+`goleak`) · `internal/hist` HDR wrapper ✅ · guards (allowlist/mutating/rate-ceiling/kill-switch) ✅ · `RunService` N-reps orchestration ✅ · pgx `SaveRun`+`GetTargetByName` ✅ · env fingerprint (`HostProbe`) ✅ · `plumber run` CLI ✅ · unit+arch green. **Remaining:** `make int` under Docker (SaveRun round-trip compiles, not executed); first real Sluice run. |
-| S2 SLO + Judge | ⬜ not started | MVP · S |
+| S2 SLO + Judge | 🟨 impl green | MVP · S · `domain.SLO` generic `{metric,threshold,unit,comparator,at_rps}` + `domain.Result` pooled view ✅ · pure `verdict.Judge` (latency/error_rate/throughput; `ErrNoSLO` on empty) ✅ · `ports.SLOStore` + pgx upsert (`0010` unique `target_id,metric`) ✅ · `app.SLOService` + `RunService` judges when SLOs exist ✅ · `plumber slo set\|list` + verdict table in `run` ✅ · unit+arch green. **Remaining:** `make int` under Docker (SetSLO/SLOsForTarget round-trip compiles, not executed). |
 | S3 baseline + Compare (bootstrap CI) | ⬜ not started | MVP · M · **stop-and-use gate** |
 | S4 ramp + knee | ⬜ not started | M |
 | S5 white-box tail attribution | ⬜ not started | expensive tier · resolve F3 first · L |
@@ -50,6 +50,16 @@ Legend: ⬜ not started · 🟨 in progress · ✅ done+green.
 > _(empty)_
 
 ## Session log
+
+### 2026-07-16 — S2: SLO + Judge (impl green)
+- **Domain:** `domain.SLO` — the generic `{metric, threshold, unit, comparator, at_rps}` from SPEC §3, pure. `NewSLO` refuses malformed states: unknown metric/comparator, unit that doesn't match the metric (latency⇒ms, error_rate⇒%, throughput⇒rps), negative or >100% thresholds, negative at_rps. `MetricKind`/`Comparator` enums; comparator set matches the `0002` CHECK. `SLO.Check(Result)` returns `(actual, pass)` and is the single place error_rate is converted [0,1]→%. New `domain.Result` = the pooled metric view Judge consumes (plain numbers, so verdict stays fixture-testable in µs, no histogram/DB). Table-driven tests for construction + every comparator/axis.
+- **Verdict (crown jewel grows):** pure `verdict.Judge(Result, []SLO) → Verdicts` — per-metric PASS/FAIL across all three axes. `ErrNoSLO` on an empty set enforces "no verdict without a declared SLO" (number-before-narrative, correctly scoped — SPEC §8); an empty set is *not* silently "all pass". `Verdicts.AllPass()` for the overall line. arch-test confirms verdict still imports only `domain`.
+- **Ports/app:** consumer-owned `ports.SLOStore` (`SetSLO` upsert-per-metric, `SLOsForTarget`). `app.SLOService` validates in the domain then resolves target-name→id before touching the store. `RunService` gained an `SLOStore` dep: after `Summarise` it loads the target's SLOs and judges **only when ≥1 exists** (a single audited run with no SLO stays legitimate, carries no verdict). `RunSummary.Result()` is the seam from measurement view → pure math. Fakes updated; `run_test` asserts a seeded p50 SLO passes.
+- **Store:** `SetSLO` is an upsert on the new `(target_id, metric)` unique constraint (`migrations/0010`) — `slo set` reconfigures, doesn't append; slos is config, not evidence (0009 untouched). `SLOsForTarget` re-validates each row through `NewSLO` so a malformed persisted SLO can't reach the verdict engine. `at_rps` NULL⇔0. Integration test written+tagged.
+- **CLI:** `plumber slo set <target> --metric --threshold --unit --comparator [--at-rps]` and `slo list <target>`, wired at the root. `plumber run` now prints the per-metric verdict table (`METRIC · SLO · ACTUAL · @RPS · RESULT`) + overall PASS/FAIL, or a "no SLO declared" hint. `cli_test` covers the new command tree + `slo set` flag/arg validation (fails before any DB connect).
+- **Green here:** `go build`, `go vet` (incl. `-tags=integration`), `gofmt -s`, `go test -race ./...`, `make arch`, fresh migrate-ordering test (picks up `0010`). CLI smoke: `slo set --help` clean.
+- **⚠️ Gaps (carried, same as S0/S1):** Docker down → `make int` (SetSLO/SLOsForTarget round-trip, upsert semantics, `0010` constraint) compiled but **not executed**. `golangci-lint` not on PATH here. Secrets-at-rest gate (review #5) still open — no non-local target touched yet.
+- **Next:** `make int` on a Docker host; then S3 — baseline + `verdict.Compare` (bootstrap CI + comparability/env-drift guards), the MVP stop-and-use gate.
 
 ### 2026-07-16 — S1: open-model load driver → Run with variance (impl green)
 - **`internal/hist`** — pure HDR wrapper over `HdrHistogram/hdrhistogram-go` (µs internally, ms out; gob of `Snapshot` into `reps.histogram`). Records now, resampled by `verdict` in S3. Kept out of `domain` so the pure core takes no histogram dependency; arch-test unaffected.

@@ -8,6 +8,7 @@ import (
 
 	"plumber/internal/domain"
 	"plumber/internal/hist"
+	"plumber/internal/verdict"
 )
 
 // fakeDriver returns a canned RepResult carrying a real encoded histogram (so
@@ -77,8 +78,17 @@ func TestRunService_Run(t *testing.T) {
 	driver := &fakeDriver{latency: 20 * time.Millisecond}
 	store := &fakeResultStore{}
 	probe := fakeProbe{fp: domain.EnvFingerprint{Host: "h", Colocation: "same-vpc"}}
+	// Declare a p50<=25ms SLO on target 1: the ~20ms pooled p50 must PASS.
+	p50SLO, err := domain.NewSLO("p50", 25, "ms", "<=", 0)
+	if err != nil {
+		t.Fatalf("NewSLO: %v", err)
+	}
+	slos := &fakeSLOStore{}
+	if _, err := slos.SetSLO(context.Background(), 1, p50SLO); err != nil {
+		t.Fatalf("seed SLO: %v", err)
+	}
 
-	svc := NewRunService(targets, driver, store, probe)
+	svc := NewRunService(targets, driver, store, probe, slos)
 
 	res, err := svc.Run(context.Background(), RunParams{
 		TargetName: "sluice", Profile: mustProfile(t), NReps: 5,
@@ -121,10 +131,17 @@ func TestRunService_Run(t *testing.T) {
 	if res.Summary.ErrorRate < 0.49 || res.Summary.ErrorRate > 0.51 {
 		t.Errorf("pooled error rate = %.3f, want 0.5", res.Summary.ErrorRate)
 	}
+	// The declared p50<=25ms SLO is judged and passes (pooled p50 ~20ms).
+	if len(res.Verdicts) != 1 {
+		t.Fatalf("got %d verdicts, want 1", len(res.Verdicts))
+	}
+	if res.Verdicts[0].SLO.Metric != domain.MetricP50 || res.Verdicts[0].Status != verdict.Pass {
+		t.Errorf("verdict = %+v, want p50 PASS", res.Verdicts[0])
+	}
 }
 
 func TestRunService_TargetNotFound(t *testing.T) {
-	svc := NewRunService(&fakeTargetStore{}, &fakeDriver{}, &fakeResultStore{}, fakeProbe{})
+	svc := NewRunService(&fakeTargetStore{}, &fakeDriver{}, &fakeResultStore{}, fakeProbe{}, &fakeSLOStore{})
 	_, err := svc.Run(context.Background(), RunParams{TargetName: "ghost", Profile: mustProfile(t), NReps: 3})
 	if !errors.Is(err, domain.ErrTargetNotFound) {
 		t.Fatalf("err = %v, want domain.ErrTargetNotFound", err)
@@ -136,7 +153,7 @@ func TestRunService_GuardErrorNotPersisted(t *testing.T) {
 	driver := &fakeDriver{failErr: domain.ErrTargetNotAllowlisted} // driver refuses
 	store := &fakeResultStore{}
 
-	svc := NewRunService(targets, driver, store, fakeProbe{})
+	svc := NewRunService(targets, driver, store, fakeProbe{}, &fakeSLOStore{})
 	_, err := svc.Run(context.Background(), RunParams{TargetName: "sluice", Profile: mustProfile(t), NReps: 3})
 	if !errors.Is(err, domain.ErrTargetNotAllowlisted) {
 		t.Fatalf("err = %v, want domain.ErrTargetNotAllowlisted", err)
@@ -148,7 +165,7 @@ func TestRunService_GuardErrorNotPersisted(t *testing.T) {
 
 func TestRunService_RejectsZeroReps(t *testing.T) {
 	targets := seededTargets(t, domain.WithAllowlisted())
-	svc := NewRunService(targets, &fakeDriver{}, &fakeResultStore{}, fakeProbe{})
+	svc := NewRunService(targets, &fakeDriver{}, &fakeResultStore{}, fakeProbe{}, &fakeSLOStore{})
 	_, err := svc.Run(context.Background(), RunParams{TargetName: "sluice", Profile: mustProfile(t), NReps: 0})
 	if !errors.Is(err, domain.ErrRunInvalid) {
 		t.Fatalf("err = %v, want domain.ErrRunInvalid", err)

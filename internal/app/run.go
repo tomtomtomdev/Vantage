@@ -8,23 +8,26 @@ import (
 	"plumber/internal/domain"
 	"plumber/internal/hist"
 	"plumber/internal/ports"
+	"plumber/internal/verdict"
 )
 
 // RunService orchestrates one audit Run: it looks up the target, drives N
-// repetitions through the load driver, captures the environment fingerprint, and
-// persists the immutable Run (SPEC §3/§8). It wires ports only — the measurement
-// integrity lives in the driver, the significance math in verdict (S3).
+// repetitions through the load driver, captures the environment fingerprint,
+// persists the immutable Run, and judges it against the target's declared SLOs
+// (SPEC §3/§7/§8). It wires ports only — the measurement integrity lives in the
+// driver, the significance math in verdict.
 type RunService struct {
 	targets ports.TargetStore
 	driver  ports.LoadDriver
 	store   ports.ResultStore
 	probe   ports.EnvProbe
+	slos    ports.SLOStore
 	now     func() time.Time
 }
 
 // NewRunService injects the ports the use case needs.
-func NewRunService(targets ports.TargetStore, driver ports.LoadDriver, store ports.ResultStore, probe ports.EnvProbe) *RunService {
-	return &RunService{targets: targets, driver: driver, store: store, probe: probe, now: time.Now}
+func NewRunService(targets ports.TargetStore, driver ports.LoadDriver, store ports.ResultStore, probe ports.EnvProbe, slos ports.SLOStore) *RunService {
+	return &RunService{targets: targets, driver: driver, store: store, probe: probe, slos: slos, now: time.Now}
 }
 
 // RunParams are the caller's inputs for one Run.
@@ -51,11 +54,29 @@ type RunSummary struct {
 	DriverOverheadMs float64
 }
 
-// RunResult bundles what the CLI needs to report a completed Run.
+// Result projects the pooled summary into the domain.Result that verdict.Judge
+// consumes — the single seam between the app's measurement view and the pure
+// significance math. AchievedRPS is the throughput axis.
+func (s RunSummary) Result() domain.Result {
+	return domain.Result{
+		P50Ms:         s.Pooled.P50,
+		P90Ms:         s.Pooled.P90,
+		P99Ms:         s.Pooled.P99,
+		P999Ms:        s.Pooled.P999,
+		MaxMs:         s.Pooled.Max,
+		ErrorRate:     s.ErrorRate,
+		ThroughputRPS: s.AchievedRPS,
+	}
+}
+
+// RunResult bundles what the CLI needs to report a completed Run. Verdicts is
+// nil when the target has no declared SLO — a single audited run is legitimate,
+// it just carries no PASS/FAIL (SPEC §8).
 type RunResult struct {
-	RunID   int64
-	Run     domain.Run
-	Summary RunSummary
+	RunID    int64
+	Run      domain.Run
+	Summary  RunSummary
+	Verdicts verdict.Verdicts
 }
 
 // Run executes the audit. Guard violations from the driver (SPEC §9) and a
@@ -108,11 +129,26 @@ func (s *RunService) Run(ctx context.Context, p RunParams) (RunResult, error) {
 		return RunResult{}, err
 	}
 
+	// Judge against the target's declared SLOs, if any. A target with no SLO
+	// yields a legitimate run without a PASS/FAIL — Judge is only called when a
+	// threshold exists, honouring "no verdict without a declared SLO" (SPEC §8).
+	slos, err := s.slos.SLOsForTarget(ctx, targetID)
+	if err != nil {
+		return RunResult{}, fmt.Errorf("loading SLOs: %w", err)
+	}
+	var verdicts verdict.Verdicts
+	if len(slos) > 0 {
+		verdicts, err = verdict.Judge(summary.Result(), slos)
+		if err != nil {
+			return RunResult{}, fmt.Errorf("judging run: %w", err)
+		}
+	}
+
 	runID, err := s.store.SaveRun(ctx, targetID, run)
 	if err != nil {
 		return RunResult{}, err
 	}
-	return RunResult{RunID: runID, Run: run, Summary: summary}, nil
+	return RunResult{RunID: runID, Run: run, Summary: summary, Verdicts: verdicts}, nil
 }
 
 // Summarise merges the per-rep histograms into pooled percentiles and computes the

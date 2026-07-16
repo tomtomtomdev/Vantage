@@ -20,7 +20,7 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true, // a runtime error is not a usage error; don't dump help
 		SilenceErrors: true, // main() prints the error once, at the boundary
 	}
-	root.AddCommand(newMigrateCmd(), newTargetCmd(), newRunCmd())
+	root.AddCommand(newMigrateCmd(), newTargetCmd(), newRunCmd(), newSLOCmd())
 	return root
 }
 
