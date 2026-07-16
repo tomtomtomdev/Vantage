@@ -69,10 +69,10 @@ fmt-check:
 tidy:
 	$(GO) mod tidy
 
-## migrate: apply numbered SQL migrations (runner lands in internal/platform, S0)
+## migrate: apply numbered SQL migrations (needs PLUMBER_DATABASE_URL)
 .PHONY: migrate
 migrate:
-	@echo "migrate: pending S0 runner (see migrations/README.md)"
+	$(GO) run $(LDFLAGS) ./cmd/plumber migrate
 
 ## tools: install dev tooling not bundled with the Go toolchain
 .PHONY: tools
