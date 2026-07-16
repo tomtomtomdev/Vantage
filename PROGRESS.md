@@ -6,8 +6,8 @@
 
 ## Status at a glance
 
-- **Phase:** pre-code. Document suite (SPEC v3 / PLAN / CLAUDE) complete; nothing built yet.
-- **Next action:** S0 — repo skeleton + hexagonal dirs + the arch-test (CLAUDE §3) + migrations for all SPEC §6 tables. Nothing loads yet.
+- **Phase:** S0 nearly complete. Walking skeleton runs: `plumber migrate` and `plumber target add|list` work against Postgres.
+- **Next action:** run the integration suite once against Docker (`make int`) to confirm the schema/store tests pass locally, then start S1 (open-model load driver).
 - **MVP target:** S0–S3 → move a real p99 on Sluice's OHLC/VWAP pipeline, logged below.
 - **Blocked on nothing.** F1/F2 resolved; F3 not needed until S5.
 
@@ -15,7 +15,7 @@
 
 | Slice | State | Notes |
 |---|---|---|
-| S0 walking skeleton | 🟨 in progress | arch-test ✅ · `domain.Target` ✅ (safe-by-default flags); next (needs net+Docker): migrations §6, pgx ResultStore, `target add\|list` |
+| S0 walking skeleton | 🟨 nearly done | arch-test ✅ · `domain.Target` ✅ · migrations §6 + idempotent runner ✅ · pgx `TargetStore` ✅ · `migrate` + `target add\|list` CLI ✅ · unit+arch green. **Remaining:** run `make int` against Docker (integration tests compile but weren't executed here — Docker was down). |
 | S1 black-box load → number+variance | ⬜ not started | MVP · L · the open-model driver |
 | S2 SLO + Judge | ⬜ not started | MVP · S |
 | S3 baseline + Compare (bootstrap CI) | ⬜ not started | MVP · M · **stop-and-use gate** |
@@ -50,6 +50,15 @@ Legend: ⬜ not started · 🟨 in progress · ✅ done+green.
 > _(empty)_
 
 ## Session log
+
+### 2026-07-16 — S0: schema + store + CLI (walking skeleton runs)
+- **Migrations (§6):** all eight SPEC tables as numbered SQL (`0001`–`0008`) + `0009` immutability. Two invariants moved from doc to schema (CLAUDE §8): evidence tables (`runs`/`reps`/`exemplars`/`spans`/`query_attrib`) raise on UPDATE/DELETE via trigger; `targets.auth` CHECK rejects plaintext `token`/`password`/`bearer`/`secret` keys (secrets gate, SPEC review #5) while allowing `secret_ref`/encrypted envelopes.
+- **Runner** (`internal/platform/migrate.go`): embeds `migrations/*.sql`, applies in numeric order, each in its own tx, recorded in `schema_migrations`, idempotent. Ordering/validation are pure over `fs.FS` → fast unit test (no Docker); DB apply + triggers + CHECK are integration-tested.
+- **Store** (`internal/adapters/store`): consumer-owned `ports.TargetStore` (`AddTarget`/`ListTargets`) implemented by concrete `*PgStore` over pgxpool. Duplicate name → `domain.ErrTargetExists` (errors.Is), not a leaked pg string. `domain.Target` gained the `ErrTargetExists` sentinel.
+- **App + CLI:** `app.TargetService` (validate-in-domain then persist) unit-tested against an in-memory fake. `plumber migrate` and `plumber target add|list` wired by hand in `cmd/plumber` (cobra; SIGINT/SIGTERM → root-ctx cancel = kill switch). Config read in one place; missing DSN fails clean.
+- **Green here:** `go build`, `go vet` (incl. `-tags=integration`), `gofmt -s`, `go test -race ./...`, `make arch`. CLI smoke: `--help`, missing-config, missing-flag all clean.
+- **⚠️ Gap:** Docker was down in this session, so the testcontainers integration tests (`make int`) **compile but were not executed**. Run `make int` on a Docker host before calling S0 fully done. `golangci-lint` also not on PATH here (CI/`make tools` installs it).
+- **Next:** S1 — open-model load driver (fires `go-idioms` + `perf-measurement-rigor`).
 
 ### 2026-07-14 — S0: domain.Target (test-first, pure)
 - `internal/domain/target.go` + table-driven tests (stdlib — testify deferred, proxy offline; keeps the pure core dep-free). `NewTarget` validates name/URL/mode and refuses invalid states at construction; `Mode` enum; functional options `WithMutating`/`WithAllowlisted`.
