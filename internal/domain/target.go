@@ -48,6 +48,8 @@ var (
 	// ErrTargetExists is returned by a TargetStore when a target name is already
 	// taken — names are the human handle and must be unique.
 	ErrTargetExists = errors.New("target: name already exists")
+	// ErrTargetNotFound is returned when a lookup by name finds no such target.
+	ErrTargetNotFound = errors.New("target: not found")
 )
 
 // TargetOption opts a Target into a less-safe state at the call site, so the
