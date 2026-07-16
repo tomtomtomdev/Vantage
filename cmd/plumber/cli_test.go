@@ -29,8 +29,8 @@ func TestCommandTree(t *testing.T) {
 	}
 
 	top := has("")
-	if !top["migrate"] || !top["target"] || !top["run"] || !top["slo"] {
-		t.Fatalf("root subcommands = %v, want migrate + target + run + slo", top)
+	if !top["migrate"] || !top["target"] || !top["run"] || !top["slo"] || !top["baseline"] || !top["compare"] {
+		t.Fatalf("root subcommands = %v, want migrate + target + run + slo + baseline + compare", top)
 	}
 	sub := has("target")
 	if !sub["add"] || !sub["list"] {
@@ -39,6 +39,10 @@ func TestCommandTree(t *testing.T) {
 	slo := has("slo")
 	if !slo["set"] || !slo["list"] {
 		t.Fatalf("slo subcommands = %v, want set + list", slo)
+	}
+	base := has("baseline")
+	if !base["set"] {
+		t.Fatalf("baseline subcommands = %v, want set", base)
 	}
 }
 
@@ -57,6 +61,11 @@ func TestTargetAddValidation(t *testing.T) {
 		{"slo set missing target name", []string{"slo", "set", "--metric", "p99", "--threshold", "150", "--unit", "ms", "--comparator", "<="}, "arg"},
 		{"slo set missing required metric", []string{"slo", "set", "sluice", "--threshold", "150", "--unit", "ms", "--comparator", "<="}, "metric"},
 		{"slo list missing target name", []string{"slo", "list"}, "arg"},
+		{"baseline set missing run id", []string{"baseline", "set"}, "arg"},
+		// A non-numeric run id is rejected before any DB connection.
+		{"baseline set bad run id", []string{"baseline", "set", "abc"}, "run id"},
+		{"compare missing run id", []string{"compare"}, "arg"},
+		{"compare bad run id", []string{"compare", "notanum"}, "run id"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
