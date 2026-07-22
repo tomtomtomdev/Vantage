@@ -74,6 +74,35 @@ tidy:
 migrate:
 	$(GO) run $(LDFLAGS) ./cmd/plumber migrate
 
+## dev: one-step dev env — compose Postgres up, migrate, build (PLAN §SD)
+# Prereq failures are one-line and actionable, not compose stack traces.
+# Idempotent: re-running on an up env is a fast no-op (compose --wait +
+# migration runner both converge).
+.PHONY: dev
+dev:
+	@command -v $(GO) >/dev/null 2>&1 || { echo "make dev: go not found — install Go 1.22+ (https://go.dev/dl)"; exit 1; }
+	@command -v docker >/dev/null 2>&1 || { echo "make dev: docker not found — install Docker Desktop"; exit 1; }
+	@docker info >/dev/null 2>&1 || { echo "make dev: Docker daemon not running — start Docker"; exit 1; }
+	@test -f .env || { cp .env.example .env && echo "make dev: created .env from .env.example"; }
+	@docker compose up -d --wait || { echo "make dev: postgres failed to come up — try 'docker compose logs postgres'"; exit 1; }
+	@set -a; . ./.env; set +a; $(GO) run $(LDFLAGS) ./cmd/plumber migrate
+	@$(MAKE) --no-print-directory build
+	@echo ""
+	@echo "dev env ready. Next:"
+	@echo "  set -a; . ./.env; set +a                                # export the dev DSN"
+	@echo "  bin/plumber target add sluice --url http://localhost:8080 --allowlisted"
+	@echo "  bin/plumber target list"
+
+## dev-down: stop the dev Postgres, keep its data volume
+.PHONY: dev-down
+dev-down:
+	docker compose down
+
+## dev-nuke: stop the dev Postgres AND drop its data volume (destructive)
+.PHONY: dev-nuke
+dev-nuke:
+	docker compose down -v
+
 ## tools: install dev tooling not bundled with the Go toolchain
 .PHONY: tools
 tools:
