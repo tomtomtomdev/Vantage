@@ -12,6 +12,7 @@ coverage.out
 # Secrets — never commit (SPEC review #5). targets.auth is encrypted/reference-only.
 .env
 .env.*
+!.env.example
 *.pem
 *.key
 secrets/
