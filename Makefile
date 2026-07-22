@@ -37,8 +37,15 @@ cover:
 	$(GO) tool cover -func=$(COVERPROF) | tail -1
 
 ## int: integration tests (real Postgres via testcontainers-go); needs Docker
+# testcontainers-go's provider probe doesn't read the docker CLI context, so on
+# Colima (or any non-default socket) it fails with "rootless Docker not found".
+# Derive DOCKER_HOST from the active context when unset, and point the reaper at
+# the in-VM socket. Both use :- so an explicit env still wins (rootless Linux:
+# set TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/run/user/$$UID/docker.sock).
 .PHONY: int
 int:
+	DOCKER_HOST="$${DOCKER_HOST:-$$(docker context inspect -f '{{.Endpoints.docker.Host}}' 2>/dev/null)}" \
+	TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE="$${TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE:-/var/run/docker.sock}" \
 	$(GO) test -race -tags=integration $(PKG)
 
 ## arch: belt-and-braces import-boundary test (domain/verdict stay pure)
