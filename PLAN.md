@@ -114,6 +114,27 @@ Tasks:
 > ### ⛔ MVP CHECKPOINT — stop here and *use it*
 > Plumber now earns its keep. Run it on Sluice for real, fix an actual p99, log it in PROGRESS.md. Only greenlight S4+ after the black-box tier has proven useful (SPEC §11 MVP tier). Do not roll straight into the expensive tier.
 
+## SD — One-step dev env + run (`make dev`)  *(infra, not a feature slice; gates the stop-and-use step; S)*
+
+**Goal:** a fresh clone (or a cold session) reaches a running Plumber against a local Postgres with **one command** — `make dev`. Today the path is manual: install Go/Docker yourself, hand-start a Postgres, export `PLUMBER_DATABASE_URL`, `make migrate`. That friction sits directly in front of the MVP checkpoint, so it lands **before** the real-Sluice round-trip.
+
+**Scope decision:** the compose DB is for *running the CLI*; `make int` keeps testcontainers (S0 decision stands — don't fork the test harness). No secrets involved: local dev DSN only, which also keeps the review-#5 gate untouched.
+
+Checks first (script-level, not unit tests — the smoke check *is* the spec):
+- [ ] `scripts/dev-smoke.sh`: from a clean state, `make dev` exits 0 and `plumber target list` runs against the dev DB without manual env setup.
+- [ ] **Idempotent:** a second `make dev` on an already-up env exits 0 quickly (no re-create, no duplicate migrations — runner already guarantees the latter).
+- [ ] **Prereq failure is clean:** with Docker down, `make dev` fails with a one-line actionable message ("start Docker"), not a compose stack trace.
+
+Tasks:
+- [ ] `docker-compose.yml`: one pinned-version Postgres service with a healthcheck, non-default port to avoid clashing with a system Postgres.
+- [ ] `.env.example` with the matching `PLUMBER_DATABASE_URL`; `make dev` copies to `.env` if absent and sources it.
+- [ ] `make dev`: prereq check (go, docker) → `docker compose up -d --wait` → `plumber migrate` → `make build` → print next steps (`bin/plumber target add …`).
+- [ ] `make dev-down` (stop, keep data) and `make dev-nuke` (stop + drop volume — destructive, named accordingly).
+- [ ] README Quickstart rewritten to lead with `make dev`.
+
+**Green bar:** on a machine with only Go + Docker, `git clone && make dev && bin/plumber target list` works end-to-end; smoke script green; re-run idempotent.
+**Commit boundary:** compose + env in one commit; Make targets + smoke script in another; README in the last.
+
 ## S4 — Ramp + knee  *(Phase 1: the knee; M)*
 
 **Goal:** find the capacity ceiling; plot latency **and** error rate.
