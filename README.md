@@ -13,9 +13,10 @@ First audit target: **Sluice**'s OHLC/VWAP pipeline (SPEC §2).
 
 ## Status
 
-**Pre-code.** Document suite (SPEC v3 / PLAN / CLAUDE) complete; scaffold and
-toolchain in place. Next: **S0** — walking skeleton + the arch-test + migrations.
-See [PROGRESS.md](PROGRESS.md) for the live state.
+**MVP (S0–S3) code-complete and integration-tested.** Run → SLO judge →
+baseline → `compare` with a bootstrap 95% CI all work end-to-end against a
+local Postgres. Next: the **stop-and-use** step — point Plumber at real Sluice
+and move a p99. See [PROGRESS.md](PROGRESS.md) for the live state.
 
 ## Stack
 
@@ -49,14 +50,34 @@ not by discipline.
 
 ## Quickstart
 
+One command from a fresh clone to a running Plumber (needs Go 1.22+ and Docker):
+
+```bash
+make dev       # compose Postgres up (port 5433) + migrate + build -> bin/plumber
+set -a; . ./.env; set +a                 # export the dev DSN it created
+bin/plumber target add sluice --url http://localhost:8080 --allowlisted
+bin/plumber target list
+```
+
+`make dev` is idempotent — re-run it any time. `make dev-down` stops the dev
+Postgres (data kept); `make dev-nuke` also drops the volume (destructive).
+`scripts/dev-smoke.sh` checks the whole path.
+
+Everything else:
+
 ```bash
 make tools     # install golangci-lint + goimports (one-time)
 make build     # -> bin/plumber
 make run       # run the CLI
 make test      # unit tests, race detector on
-make int       # integration tests (needs Docker)
+make int       # integration tests (needs Docker; separate from the dev DB)
 make ci        # everything CI blocks on: fmt-check lint arch test
 ```
+
+> **Colima / non-default Docker socket:** `make int` auto-derives `DOCKER_HOST`
+> from your active `docker context` and points the testcontainers reaper at the
+> in-VM socket, so no manual export is needed. Rootless Linux: set
+> `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/run/user/$UID/docker.sock` first.
 
 ## Documents (read in this order)
 
