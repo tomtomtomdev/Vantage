@@ -1,5 +1,7 @@
 # Portable CI gate. Swap for a self-hosted Anvil runner if preferred —
-# the gates (build, race tests, lint incl. depguard boundary) are the point.
+# the gates are the point: gofmt, build, the arch-test (dependency rule),
+# race tests, and lint (depguard is the fast gate for the same boundary).
+# gofmt and arch go through `make` so CI and `make ci` cannot drift apart.
 name: ci
 on: [push, pull_request]
 jobs:
@@ -9,7 +11,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version-file: go.mod }
+      - run: make fmt-check
       - run: go build ./...
+      # -count=1 inside the target: the arch-test's verdict comes from `go list`,
+      # external state the build cache can't see, so a cached pass can mask a
+      # fresh violation.
+      - run: make arch
       - run: go test -race ./...
       - uses: golangci/golangci-lint-action@v6
         with: { version: latest }
