@@ -18,5 +18,9 @@ jobs:
       # fresh violation.
       - run: make arch
       - run: go test -race ./...
-      - uses: golangci/golangci-lint-action@v6
-        with: { version: latest }
+      # action v6 installs the golangci-lint v1 line, which cannot read a
+      # `version: "2"` config and is built against an older Go than go.mod
+      # targets. v7+ is the v2-capable line. The linter version is pinned
+      # rather than `latest` so CI and `make lint` agree on findings.
+      - uses: golangci/golangci-lint-action@v8
+        with: { version: v2.5.0 }
