@@ -92,13 +92,13 @@ func newSLOListCmd() *cobra.Command {
 			}
 
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "METRIC\tCOMPARATOR\tTHRESHOLD\tUNIT\t@RPS")
+			_, _ = fmt.Fprintln(w, "METRIC\tCOMPARATOR\tTHRESHOLD\tUNIT\t@RPS")
 			for _, s := range slos {
 				atRPS := "—"
 				if s.AtRPS > 0 {
 					atRPS = fmt.Sprintf("%.0f", s.AtRPS)
 				}
-				fmt.Fprintf(w, "%s\t%s\t%g\t%s\t%s\n", s.Metric, s.Comparator, s.Threshold, s.Unit, atRPS)
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%g\t%s\t%s\n", s.Metric, s.Comparator, s.Threshold, s.Unit, atRPS)
 			}
 			return w.Flush()
 		},

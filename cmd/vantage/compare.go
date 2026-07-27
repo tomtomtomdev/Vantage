@@ -126,13 +126,13 @@ func printComparison(cmd *cobra.Command, res app.CompareResult) {
 	}
 
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "\nMETRIC\tBASELINE\tCANDIDATE\tΔ\t95% CI\tVERDICT")
+	_, _ = fmt.Fprintln(w, "\nMETRIC\tBASELINE\tCANDIDATE\tΔ\t95% CI\tVERDICT")
 	for _, d := range c.Deltas {
 		verdictStr := string(d.Significance)
 		if c.Comparability == verdict.Confounded {
 			verdictStr = "confounded" // no bare "significant" claim survives a confounded pair
 		}
-		fmt.Fprintf(w, "%s\t%.1fms\t%.1fms\t%+.1fms\t[%+.1f, %+.1f]\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%.1fms\t%.1fms\t%+.1fms\t[%+.1f, %+.1f]\t%s\n",
 			d.Metric, d.BaselineMs, d.CandidateMs, d.PointMs, d.CILowMs, d.CIHighMs, verdictStr)
 	}
 	_ = w.Flush()

@@ -97,13 +97,13 @@ func printRun(cmd *cobra.Command, p domain.LoadProfile, res app.RunResult) {
 	cmd.Printf("env: host=%s colocation=%s\n\n", res.Run.Env.Host, res.Run.Env.Colocation)
 
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "REP\tP50(ms)\tP90(ms)\tP99(ms)\tP99.9(ms)\tMAX(ms)\tERR%\tRPS")
+	_, _ = fmt.Fprintln(w, "REP\tP50(ms)\tP90(ms)\tP99(ms)\tP99.9(ms)\tMAX(ms)\tERR%\tRPS")
 	for _, r := range res.Run.Reps {
-		fmt.Fprintf(w, "%d\t%.1f\t%.1f\t%.1f\t%.1f\t%.1f\t%.2f\t%.1f\n",
+		_, _ = fmt.Fprintf(w, "%d\t%.1f\t%.1f\t%.1f\t%.1f\t%.1f\t%.2f\t%.1f\n",
 			r.Seq, r.P50Ms, r.P90Ms, r.P99Ms, r.P999Ms, r.MaxMs, r.ErrorRate*100, r.AchievedRPS)
 	}
 	s := res.Summary
-	fmt.Fprintf(w, "pooled\t%.1f\t%.1f\t%.1f\t%.1f\t%.1f\t%.2f\t%.1f\n",
+	_, _ = fmt.Fprintf(w, "pooled\t%.1f\t%.1f\t%.1f\t%.1f\t%.1f\t%.2f\t%.1f\n",
 		s.Pooled.P50, s.Pooled.P90, s.Pooled.P99, s.Pooled.P999, s.Pooled.Max, s.ErrorRate*100, s.AchievedRPS)
 	_ = w.Flush()
 
@@ -129,13 +129,13 @@ func printVerdicts(cmd *cobra.Command, verdicts verdict.Verdicts) {
 	cmd.Printf("\nSLO verdict: %s\n", overall)
 
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "METRIC\tSLO\tACTUAL\t@RPS\tRESULT")
+	_, _ = fmt.Fprintln(w, "METRIC\tSLO\tACTUAL\t@RPS\tRESULT")
 	for _, v := range verdicts {
 		atRPS := "—"
 		if v.SLO.AtRPS > 0 {
 			atRPS = fmt.Sprintf("%.0f", v.SLO.AtRPS)
 		}
-		fmt.Fprintf(w, "%s\t%s %g%s\t%g %s\t%s\t%s\n",
+		_, _ = fmt.Fprintf(w, "%s\t%s %g%s\t%g %s\t%s\t%s\n",
 			v.SLO.Metric, v.SLO.Comparator, v.SLO.Threshold, unitSuffix(v.SLO.Unit),
 			v.Actual, v.SLO.Unit, atRPS, v.Status)
 	}

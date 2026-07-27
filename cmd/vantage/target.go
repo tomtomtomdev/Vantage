@@ -83,9 +83,9 @@ func newTargetListCmd() *cobra.Command {
 			}
 
 			w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-			fmt.Fprintln(w, "NAME\tMODE\tALLOWLISTED\tMUTATING\tURL")
+			_, _ = fmt.Fprintln(w, "NAME\tMODE\tALLOWLISTED\tMUTATING\tURL")
 			for _, t := range targets {
-				fmt.Fprintf(w, "%s\t%s\t%t\t%t\t%s\n",
+				_, _ = fmt.Fprintf(w, "%s\t%s\t%t\t%t\t%s\n",
 					t.Name, t.Mode, t.Allowlisted, t.Mutating, t.BaseURL)
 			}
 			return w.Flush()
