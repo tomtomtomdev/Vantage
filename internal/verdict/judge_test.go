@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 func mustSLO(t *testing.T, metric string, threshold float64, unit, comparator string) domain.SLO {

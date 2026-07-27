@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"plumber/internal/platform"
-	"plumber/migrations"
+	"github.com/tomtomtomdev/vantage/internal/platform"
+	"github.com/tomtomtomdev/vantage/migrations"
 )
 
 // newMigrateCmd applies the embedded schema migrations. Idempotent — safe to run

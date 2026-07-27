@@ -1,4 +1,4 @@
--- targets: a system Plumber is authorized to measure (SPEC §6).
+-- targets: a system Vantage is authorized to measure (SPEC §6).
 -- Config, not evidence — targets may be edited (re-allowlisted, retargeted).
 CREATE TABLE targets (
     id               bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

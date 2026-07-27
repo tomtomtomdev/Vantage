@@ -7,9 +7,9 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"plumber/internal/adapters/store"
-	"plumber/internal/app"
-	"plumber/internal/verdict"
+	"github.com/tomtomtomdev/vantage/internal/adapters/store"
+	"github.com/tomtomtomdev/vantage/internal/app"
+	"github.com/tomtomtomdev/vantage/internal/verdict"
 )
 
 // newBaselineCmd is the `baseline` group: designate the reference Run a target's

@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"plumber/internal/domain"
-	"plumber/internal/hist"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/hist"
 )
 
 // Comparability is the run-level verdict of a Compare: whether the two Runs may be

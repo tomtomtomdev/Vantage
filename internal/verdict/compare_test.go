@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"plumber/internal/domain"
-	"plumber/internal/hist"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/hist"
 )
 
 // rep builds a single-valued histogram: `count` samples all at centerMs, so every

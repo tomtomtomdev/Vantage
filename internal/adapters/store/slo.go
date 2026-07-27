@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"plumber/internal/domain"
-	"plumber/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/ports"
 )
 
 // SetSLO declares an SLO for targetID, replacing any prior SLO for the same

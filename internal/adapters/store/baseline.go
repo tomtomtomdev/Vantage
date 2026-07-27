@@ -9,8 +9,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"plumber/internal/domain"
-	"plumber/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/ports"
 )
 
 // GetRun loads a stored Run (including every rep's HDR histogram blob) and the id

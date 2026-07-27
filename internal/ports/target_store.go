@@ -3,10 +3,10 @@ package ports
 import (
 	"context"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
-// TargetStore persists and retrieves the targets Plumber is authorized to
+// TargetStore persists and retrieves the targets Vantage is authorized to
 // measure. Defined here by the consumer (the app), implemented by the pgx
 // adapter in internal/adapters/store (CLAUDE §3). Kept small — persistence of
 // runs/reps/baselines is a separate port added when S1 needs it.

@@ -10,8 +10,8 @@ import (
 
 	"go.uber.org/goleak"
 
-	"plumber/internal/domain"
-	"plumber/internal/hist"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/hist"
 )
 
 // goleak turns a leaked goroutine into a red test — a leak in the load driver is

@@ -1,6 +1,6 @@
-# Plumber — SPEC.md (v3)
+# Vantage — SPEC.md (v3)
 
-> Working name: **Plumber** (a plumb line establishes true vertical — ground truth; "plumbing the depths" — investigation). Alternatives: *Gauge*, *Sextant*, *Tare*.
+> Name: **Vantage** (a vantage point is the position you observe from — the place that gives you the clearest, truest view of what's happening). Renamed from *Plumber* mid-build.
 
 **Status:** Draft spec v3 (second review pass). Governs the forthcoming PLAN / CLAUDE / PROGRESS docs.
 **One-liner:** A self-hosted audit harness that turns "I think it's slow" into "here's the number, here's where it lives, and here's the proof I moved it — beyond noise, and not by accident."
@@ -8,7 +8,7 @@
 **v3 changelog (external-validity + strategy pass):**
 - §8/§6/§7 add **environment comparability**: a bootstrap CI proves *precision*, not *causation* — a precise measurement of a confounded number (data drift, warm cache, noisy neighbour) is still wrong. Runs now carry an environment fingerprint and `Compare` guards on it.
 - §7/§8/§11 add **errors-excluded-from-latency**: percentiles are computed over *successful* requests only, with error rate as a co-equal axis — otherwise a service that fails-fast past the knee looks *faster*.
-- §2/§11/§13 make the **Sluice consolidation call**: Plumber's first audit target *is* Sluice, so the two backend-pivot projects reinforce instead of competing for the same evenings.
+- §2/§11/§13 make the **Sluice consolidation call**: Vantage's first audit target *is* Sluice, so the two backend-pivot projects reinforce instead of competing for the same evenings.
 - §11/§13 name the **MVP as S1–S3** (black-box, prove-with-CI); white-box (S5/S6) is the expensive tier, deferred until the cheap tier has earned its keep.
 
 **v2 changelog (first review — internal soundness):**
@@ -18,23 +18,23 @@
 
 ## 1. Thesis
 
-The `backend-audit-refactor` playbook has one cardinal rule — *number before narrative* — and every phase depends on an instrument that (a) produces the number, (b) stores it as tamper-evident evidence tied to a code state, and (c) renders a PASS/FAIL verdict against a declared target plus a before/after delta *that clears the noise band*. That instrument is Plumber.
+The `backend-audit-refactor` playbook has one cardinal rule — *number before narrative* — and every phase depends on an instrument that (a) produces the number, (b) stores it as tamper-evident evidence tied to a code state, and (c) renders a PASS/FAIL verdict against a declared target plus a before/after delta *that clears the noise band*. That instrument is Vantage.
 
-Plumber is not a monitoring dashboard. Monitoring answers "how is it doing right now." Plumber answers a different, audit-shaped question: **"against this stated SLO, what is this endpoint's p99 under this load, where does the time go, and did my change actually move it beyond noise?"** It is the executable form of the playbook's Measure → Net → Verify loop.
+Vantage is not a monitoring dashboard. Monitoring answers "how is it doing right now." Vantage answers a different, audit-shaped question: **"against this stated SLO, what is this endpoint's p99 under this load, where does the time go, and did my change actually move it beyond noise?"** It is the executable form of the playbook's Measure → Net → Verify loop.
 
 ## 2. Why build this, what it *is*, and what off-the-shelf can't do
 
 Honest framing, because half of good engineering is not reinventing wheels:
 
-- **k6 / Locust** generate load and give you a *single run's* report. They do not treat baselines as first-class objects, don't tie a run to a code state, and don't render a verdict against an SLO. Plumber *drives* a load engine (possibly k6) and owns everything downstream of the raw numbers.
-- **Grafana / Prometheus** show live time-series. They are not built to say "run A vs run B, delta on p99 is −220ms, 95% CI [180, 255], significant." Plumber's unit of work is the *comparison*, not the *stream*.
-- **Jaeger / Tempo** show individual traces. Plumber *ingests the tail exemplar* traces to attribute a run's *slow-path* latency to layers/spans, then folds that into the audit artifact.
+- **k6 / Locust** generate load and give you a *single run's* report. They do not treat baselines as first-class objects, don't tie a run to a code state, and don't render a verdict against an SLO. Vantage *drives* a load engine (possibly k6) and owns everything downstream of the raw numbers.
+- **Grafana / Prometheus** show live time-series. They are not built to say "run A vs run B, delta on p99 is −220ms, 95% CI [180, 255], significant." Vantage's unit of work is the *comparison*, not the *stream*.
+- **Jaeger / Tempo** show individual traces. Vantage *ingests the tail exemplar* traces to attribute a run's *slow-path* latency to layers/spans, then folds that into the audit artifact.
 
-So Plumber's defensible, non-NIH core is exactly three things off-the-shelf tools don't give you together: **the evidence store, the verdict engine, and the shareable audit report.** Everything else it can orchestrate.
+So Vantage's defensible, non-NIH core is exactly three things off-the-shelf tools don't give you together: **the evidence store, the verdict engine, and the shareable audit report.** Everything else it can orchestrate.
 
-**Identity call (resolved from review).** Plumber's primary subject is **services you own and can instrument** — Sluice, Orchard, and the like. That is where white-box attribution works, where the version-tagged evidence story is *true*, where the dogfooding lives (Plumber stores results in Postgres and drives load in Go; you will run Plumber against Plumber's own storage queries and `EXPLAIN ANALYZE` them), and where the blast-radius and authorization concerns of §9 mostly evaporate because it's your own staging box. **Black-box remains a supported mode** — point it at an endpoint, measure from the wire, lean on the "see APIs from the wire" strength — but it is a capability, not the product's centre of gravity. This choice is why the invariants in §8 can assume a controllable target as the default and treat black-box as the degraded case.
+**Identity call (resolved from review).** Vantage's primary subject is **services you own and can instrument** — Sluice, Orchard, and the like. That is where white-box attribution works, where the version-tagged evidence story is *true*, where the dogfooding lives (Vantage stores results in Postgres and drives load in Go; you will run Vantage against Vantage's own storage queries and `EXPLAIN ANALYZE` them), and where the blast-radius and authorization concerns of §9 mostly evaporate because it's your own staging box. **Black-box remains a supported mode** — point it at an endpoint, measure from the wire, lean on the "see APIs from the wire" strength — but it is a capability, not the product's centre of gravity. This choice is why the invariants in §8 can assume a controllable target as the default and treat black-box as the degraded case.
 
-**First target = Sluice (consolidation call).** Plumber and Sluice are both Go, both backend-pivot vehicles, and both competing for the same evenings against a long queue of specced projects. Rather than run them in parallel, **Plumber's first audit target is Sluice's OHLC/VWAP pipeline.** Build Plumber, point it at Sluice, find the p99, break it, fix it, prove the delta with a CI. The two projects then reinforce into one interview-grade story — *"I built a real-time market-data pipeline and the rigorous harness that proves its latency, and here's the tail I moved"* — instead of two half-finished ones. Sluice is also an ideal first target because it's owned, instrumentable (white-box), and its latency is genuinely load- and data-dependent, so it exercises every part of the harness that matters.
+**First target = Sluice (consolidation call).** Vantage and Sluice are both Go, both backend-pivot vehicles, and both competing for the same evenings against a long queue of specced projects. Rather than run them in parallel, **Vantage's first audit target is Sluice's OHLC/VWAP pipeline.** Build Vantage, point it at Sluice, find the p99, break it, fix it, prove the delta with a CI. The two projects then reinforce into one interview-grade story — *"I built a real-time market-data pipeline and the rigorous harness that proves its latency, and here's the tail I moved"* — instead of two half-finished ones. Sluice is also an ideal first target because it's owned, instrumentable (white-box), and its latency is genuinely load- and data-dependent, so it exercises every part of the harness that matters.
 
 ## 3. Domain model (the nouns)
 
@@ -52,7 +52,7 @@ Pure domain types, no framework — Clean/hexagonal, per §8.
 
 ## 4. Two modes (a capability split, not an identity split)
 
-- **Black-box** — measure from the wire, no server access. The built-in driver sends the request template and measures **client-side** latency percentiles + error rate. Note the co-location caveat in §8: client-side latency includes network RTT, so *where Plumber runs* is part of the measurement. Produces **RED** (Rate, Errors, Duration).
+- **Black-box** — measure from the wire, no server access. The built-in driver sends the request template and measures **client-side** latency percentiles + error rate. Note the co-location caveat in §8: client-side latency includes network RTT, so *where Vantage runs* is part of the measurement. Produces **RED** (Rate, Errors, Duration).
 - **White-box (primary)** — you control the target. *Additionally* correlate the run to server-side traces (§5) to break the **tail-path** request into spans, and ingest `EXPLAIN (ANALYZE, BUFFERS)` + `pg_stat_statements` deltas to attribute time to specific queries. Produces **USE** (Utilization, Saturation, Errors) + span/query attribution.
 
 Black-box tells you *what* (p99 is 380ms). White-box tells you *where* (340ms is one N+1 in the positions query) — **and specifically where the slow ones go**, not the average, which is the whole point (see §5).
@@ -147,10 +147,10 @@ Two pure functions, the first things written under TDD:
 - **The product embodies the cardinal rule, correctly scoped:** a *delta / "significant"* verdict requires a stored baseline; a *PASS/FAIL SLO* verdict requires only a declared SLO (a single audited run against a target is legitimate — it just can't claim a *change*). Number-before-narrative is enforced in code.
 - **Runs are immutable and version-marked** (git SHA when owned, deploy tag/digest/note in black-box). Evidence you can edit is not evidence.
 - **Measurement must not lie** — the moat, expanded:
-  - **Open-model / constant-arrival** load, to avoid *coordinated omission* (a closed-loop client that waits on slow responses under-reports the tail — the exact failure that would make Plumber produce comforting, wrong numbers).
+  - **Open-model / constant-arrival** load, to avoid *coordinated omission* (a closed-loop client that waits on slow responses under-reports the tail — the exact failure that would make Vantage produce comforting, wrong numbers).
   - **Warmup discard:** the profile's warmup window is dropped so only steady-state (post-JIT, post-pool-fill, post-cache-warm) samples count. Untrimmed warmup distorts the tail as surely as coordinated omission does.
   - **Driver self-overhead** is measured and reported per run; if the client is the bottleneck, the numbers are about the client, not the target.
-  - **Co-location declared:** black-box latency includes network RTT, so the run records where Plumber ran relative to the target. Same-host/same-VPC for like-for-like comparisons.
+  - **Co-location declared:** black-box latency includes network RTT, so the run records where Vantage ran relative to the target. Same-host/same-VPC for like-for-like comparisons.
   - **Environment comparability — precision is not causation.** A bootstrap CI proves the *measurement* is tight; it says nothing about *why* the number changed. A precise measurement of a confounded number (staging data grew, cache was warm from a prior run, a neighbour VM was noisy, a cron fired) is confidently wrong. Every Run captures an `env_fingerprint`; `Compare` downgrades to `confounded` on drift (§7); and back-to-back same-box baseline/candidate runs are the default protocol. For an equities backend this is acute — **query latency is a function of row count**, and staging tables grow, so a p99 at 1M rows vs 3M rows is data drift masquerading as a regression. This ranks alongside coordinated omission, arguably above it.
   - **Errors excluded from latency; error rate is a co-equal axis.** Percentiles are computed over *successful* requests only. Past the knee a service returns fast 5xx/timeouts, and a fail-fast service will otherwise show *better* p99 at the exact load where it's collapsing. The knee curve plots latency **and** error rate together; a latency number without its error rate is not a result.
   - **N repetitions + bootstrap CI, never a single run, for a claim.** One run answers "what is it now"; a claim of change requires variance.
@@ -159,7 +159,7 @@ Two pure functions, the first things written under TDD:
 
 ## 9. Blast radius & data safety (a real guardrail, not boilerplate)
 
-Plumber generates load. Pointed at the wrong host it *is* an availability attack; pointed at a mutating endpoint it is a *data* incident. At a securities firm this matters more, not less:
+Vantage generates load. Pointed at the wrong host it *is* an availability attack; pointed at a mutating endpoint it is a *data* incident. At a securities firm this matters more, not less:
 
 - **Allowlist-only.** No allowlist entry → no load, hard stop.
 - **Staging by default.** Production targets require a separate deliberate flag and a low rate cap.
@@ -199,13 +199,13 @@ Plumber generates load. Pointed at the wrong host it *is* an availability attack
 
 ## 13. Success criteria (the loop closes end-to-end)
 
-**MVP success (S1–S3, black-box, on Sluice) — this is the bar that matters:** point Plumber at Sluice → run N reps under a named profile → get `p50/p99/p99.9` *with variance* and error rate → declare an SLO → get PASS/FAIL → mark a baseline → change the code → re-run → get a delta with a **95% CI and a `significant | within-noise | confounded` judgment**. When *that* round-trips, Plumber already earns its keep and the backend-pivot story exists. Ship here, use it, then decide on the rest.
+**MVP success (S1–S3, black-box, on Sluice) — this is the bar that matters:** point Vantage at Sluice → run N reps under a named profile → get `p50/p99/p99.9` *with variance* and error rate → declare an SLO → get PASS/FAIL → mark a baseline → change the code → re-run → get a delta with a **95% CI and a `significant | within-noise | confounded` judgment**. When *that* round-trips, Vantage already earns its keep and the backend-pivot story exists. Ship here, use it, then decide on the rest.
 
 **Full loop (adds S4–S7):** + knee curve (latency & errors) + white-box p99 exemplar span/query breakdown + exported Markdown report. This mechanises the *entire* Measure→Verify loop, but it is opt-in depth on top of a tool that's already useful — not the definition of done. (v2's single-tier criterion quietly rewarded over-building; this split fixes that.)
 
 ## 14. Non-goals (scope discipline)
 
-- Not an APM / continuous monitor — Plumber runs *audits*, it doesn't watch prod forever. (It can *ingest* from your APM; it isn't one.)
+- Not an APM / continuous monitor — Vantage runs *audits*, it doesn't watch prod forever. (It can *ingest* from your APM; it isn't one.)
 - Not a profiler — it attributes to exemplar spans/queries and hands off to `pprof`/`EXPLAIN`, it doesn't replace them.
 - Not multi-tenant SaaS — self-hosted, single-team, TrueNAS-friendly.
 - Not a code-quality linter — that's the CI-gate half of the playbook (`raising-the-baseline.md`), a separate concern from performance evidence.

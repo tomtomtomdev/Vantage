@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"plumber/internal/domain"
-	"plumber/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/ports"
 )
 
 // SaveRun persists run and its N repetitions against targetID in one transaction,

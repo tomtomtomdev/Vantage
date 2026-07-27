@@ -1,23 +1,23 @@
-# Plumber dev environment (PLAN §SD). This Postgres is for RUNNING the CLI
+# Vantage dev environment (PLAN §SD). This Postgres is for RUNNING the CLI
 # locally (`make dev`); `make int` keeps testcontainers — don't point tests here.
 services:
   postgres:
     image: postgres:16.9-alpine
-    container_name: plumber-postgres
+    container_name: vantage-postgres
     environment:
-      POSTGRES_USER: plumber
-      POSTGRES_PASSWORD: plumber
-      POSTGRES_DB: plumber
+      POSTGRES_USER: vantage
+      POSTGRES_PASSWORD: vantage
+      POSTGRES_DB: vantage
     ports:
       # Non-default host port so a system Postgres on 5432 doesn't clash.
       - "5433:5432"
     volumes:
-      - plumber-pgdata:/var/lib/postgresql/data
+      - vantage-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U plumber -d plumber"]
+      test: ["CMD-SHELL", "pg_isready -U vantage -d vantage"]
       interval: 2s
       timeout: 2s
       retries: 30
 
 volumes:
-  plumber-pgdata:
+  vantage-pgdata:

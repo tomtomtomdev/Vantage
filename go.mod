@@ -1,4 +1,4 @@
-module plumber
+module github.com/tomtomtomdev/vantage
 
 go 1.25.0
 

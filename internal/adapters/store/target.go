@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"plumber/internal/domain"
-	"plumber/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/ports"
 )
 
 // AddTarget inserts t and returns its assigned id. A duplicate name maps to the

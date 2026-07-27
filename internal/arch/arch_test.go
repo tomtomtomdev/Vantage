@@ -14,15 +14,15 @@ import (
 // domain types are testable in microseconds precisely because they touch no I/O
 // and no framework (CLAUDE.md §3).
 var pureCore = []string{
-	"plumber/internal/domain",
-	"plumber/internal/verdict",
+	"github.com/tomtomtomdev/vantage/internal/domain",
+	"github.com/tomtomtomdev/vantage/internal/verdict",
 }
 
 // forbidden import prefixes. A match anywhere in a pure-core package's transitive
 // import graph is an architecture violation — dependencies point inward, so the
 // core cannot know about adapters, the database, the CLI, or the wire.
 var forbidden = []struct{ prefix, why string }{
-	{"plumber/internal/adapters", "adapters — the pure core must not know its I/O"},
+	{"github.com/tomtomtomdev/vantage/internal/adapters", "adapters — the pure core must not know its I/O"},
 	{"github.com/jackc/pgx", "pgx — no database in the pure core"},
 	{"github.com/spf13/cobra", "cobra — no CLI framework in the pure core"},
 	{"net/http", "net/http — no transport in the pure core"},

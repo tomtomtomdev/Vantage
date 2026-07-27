@@ -1,4 +1,4 @@
-// Command plumber is the composition root: the only place adapters meet the
+// Command vantage is the composition root: the only place adapters meet the
 // domain. Wiring happens here by hand (constructor injection, no DI framework)
 // and cobra commands are mounted here. See CLAUDE.md §3.
 //
@@ -29,7 +29,7 @@ func main() {
 	if err := newRootCmd().ExecuteContext(ctx); err != nil {
 		// Errors are values; log once, at the boundary. cmd/ is the only place
 		// allowed to exit non-zero at the top level (CLAUDE.md §4).
-		fmt.Fprintln(os.Stderr, "plumber:", err)
+		fmt.Fprintln(os.Stderr, "vantage:", err)
 		os.Exit(1)
 	}
 }

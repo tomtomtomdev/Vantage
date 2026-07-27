@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 // ResultStore persists Runs and their repetitions as append-only evidence

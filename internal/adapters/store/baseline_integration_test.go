@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"plumber/internal/adapters/store"
-	"plumber/internal/domain"
-	"plumber/internal/hist"
+	"github.com/tomtomtomdev/vantage/internal/adapters/store"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/hist"
 )
 
 // saveOneRun persists a small Run and returns (targetID, runID) for the

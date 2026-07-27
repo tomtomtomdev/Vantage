@@ -10,7 +10,7 @@ description: >-
   benchmarked it and p99 dropped 5ms", "our load test says we're fine", "just
   measure the latency" — because the most dangerous perf numbers are the
   confidently-wrong ones, and this skill exists to catch them. Especially
-  relevant when building measurement tooling (e.g. Plumber) where a subtle
+  relevant when building measurement tooling (e.g. Vantage) where a subtle
   methodology bug gets baked into every future result. Stack-agnostic; Go asides
   where useful.
 ---

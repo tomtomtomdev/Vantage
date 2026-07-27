@@ -28,7 +28,7 @@ var (
 	// ErrRunNotFound: no run with the given id.
 	ErrRunNotFound = errors.New("run: not found")
 	// ErrNoBaseline: the target has no baseline set — a delta needs one (SPEC §8).
-	ErrNoBaseline = errors.New("baseline: none set for target — `plumber baseline set <run>` first")
+	ErrNoBaseline = errors.New("baseline: none set for target — `vantage baseline set <run>` first")
 )
 
 // EnvFingerprint captures the conditions a Run was measured under, so Compare can

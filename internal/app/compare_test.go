@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"plumber/internal/domain"
-	"plumber/internal/hist"
-	"plumber/internal/verdict"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/hist"
+	"github.com/tomtomtomdev/vantage/internal/verdict"
 )
 
 // storedRun couples a Run to the target it was measured against, as the store holds it.

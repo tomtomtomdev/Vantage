@@ -12,7 +12,7 @@ import (
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
 
-	"plumber/migrations"
+	"github.com/tomtomtomdev/vantage/migrations"
 )
 
 // startPostgres spins up a throwaway Postgres and returns a connected pool.
@@ -22,9 +22,9 @@ func startPostgres(t *testing.T) *pgxpool.Pool {
 	ctx := context.Background()
 
 	container, err := tcpostgres.Run(ctx, "postgres:16-alpine",
-		tcpostgres.WithDatabase("plumber_test"),
-		tcpostgres.WithUsername("plumber"),
-		tcpostgres.WithPassword("plumber"),
+		tcpostgres.WithDatabase("vantage_test"),
+		tcpostgres.WithUsername("vantage"),
+		tcpostgres.WithPassword("vantage"),
 		testcontainers.WithWaitStrategy(
 			wait.ForLog("database system is ready to accept connections").
 				WithOccurrence(2).WithStartupTimeout(60*time.Second)),

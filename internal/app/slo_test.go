@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 // fakeSLOStore is an in-memory ports.SLOStore keyed by target id, so the app's

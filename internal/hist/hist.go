@@ -1,5 +1,5 @@
 // Package hist wraps HdrHistogram/hdrhistogram-go behind a small, pure API so the
-// rest of Plumber records latencies and (de)serializes histograms without taking a
+// rest of Vantage records latencies and (de)serializes histograms without taking a
 // direct dependency on the library's shape. It is pure computation — no I/O — so
 // the load driver uses it now and the verdict bootstrap (S3) resamples from the
 // same encoded blobs later.

@@ -1,6 +1,6 @@
-# Binaries (anchored: a bare `plumber` would also match the cmd/plumber/ source dir)
+# Binaries (anchored: a bare `vantage` would also match the cmd/vantage/ source dir)
 /bin/
-/plumber
+/vantage
 *.exe
 
 # Test & coverage output

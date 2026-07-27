@@ -6,12 +6,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"plumber/internal/adapters/store"
-	"plumber/internal/app"
+	"github.com/tomtomtomdev/vantage/internal/adapters/store"
+	"github.com/tomtomtomdev/vantage/internal/app"
 )
 
 // newTargetCmd is the `target` command group: register and list the systems
-// Plumber is authorized to measure.
+// Vantage is authorized to measure.
 func newTargetCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "target",
@@ -31,7 +31,7 @@ func newTargetAddCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "add <name>",
 		Short: "Register a target.",
-		Long: "Register a target Plumber may measure. Blast-radius flags are safe by " +
+		Long: "Register a target Vantage may measure. Blast-radius flags are safe by " +
 			"default: a target is neither mutating nor allowlisted unless opted in (SPEC §9).",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

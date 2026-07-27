@@ -3,7 +3,7 @@ package verdict
 import (
 	"errors"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 // Status is a single metric's PASS/FAIL outcome against its SLO.

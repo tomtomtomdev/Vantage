@@ -7,12 +7,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"plumber/internal/adapters/loaddriver"
-	"plumber/internal/adapters/store"
-	"plumber/internal/app"
-	"plumber/internal/domain"
-	"plumber/internal/platform"
-	"plumber/internal/verdict"
+	"github.com/tomtomtomdev/vantage/internal/adapters/loaddriver"
+	"github.com/tomtomtomdev/vantage/internal/adapters/store"
+	"github.com/tomtomtomdev/vantage/internal/app"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/platform"
+	"github.com/tomtomtomdev/vantage/internal/verdict"
 )
 
 // newRunCmd is the S1 vertical seam: drive an open-model constant load against a
@@ -118,7 +118,7 @@ func printRun(cmd *cobra.Command, p domain.LoadProfile, res app.RunResult) {
 // a PASS/FAIL requires a declared threshold (SPEC §8).
 func printVerdicts(cmd *cobra.Command, verdicts verdict.Verdicts) {
 	if len(verdicts) == 0 {
-		cmd.Println("\nno SLO declared for this target — run `plumber slo set` to get a PASS/FAIL verdict")
+		cmd.Println("\nno SLO declared for this target — run `vantage slo set` to get a PASS/FAIL verdict")
 		return
 	}
 

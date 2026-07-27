@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"plumber/internal/domain"
-	"plumber/internal/hist"
-	"plumber/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/hist"
+	"github.com/tomtomtomdev/vantage/internal/ports"
 )
 
 // Config parameterises the driver. Workers is the bounded pool size (it models

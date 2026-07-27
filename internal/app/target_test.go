@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 // fakeTargetStore is an in-memory ports.TargetStore: the app layer's use cases

@@ -1,4 +1,4 @@
-# Plumber — PLAN.md
+# Vantage — PLAN.md
 
 **Governs:** the build. Companion to SPEC.md v3 (§refs point there; not restated here).
 **Status:** Draft plan. Sequence is S0 → S7. **MVP = S0–S3** (SPEC §11/§13); stop-and-use gate after S3.
@@ -14,7 +14,7 @@
 
 ## Tech stack (detail → CLAUDE.md)
 
-- Go 1.22+, hexagonal layout per SPEC §5. Module `plumber`.
+- Go 1.22+, hexagonal layout per SPEC §5. Module `vantage`.
 - **Postgres** via `jackc/pgx/v5`. Migrations as plain numbered SQL + a tiny runner (or `golang-migrate` if preferred).
 - **HDR histograms** via `HdrHistogram/hdrhistogram-go`; persist with its compressed encoding into `reps.histogram bytea`.
 - **CLI** via `cobra` (the S0–S7 vertical seam; SPEC §11 slicing decision).
@@ -25,7 +25,7 @@
 
 - [ ] TDD: write the failing test in the domain/verdict layer before the adapter.
 - [ ] Commit hygiene: refactor commits are behaviour-preserving and keep every test green; fix commits start with a failing reproduction. Never combined.
-- [ ] Every slice ends green on `go test ./...` and ships a working `plumber` subcommand.
+- [ ] Every slice ends green on `go test ./...` and ships a working `vantage` subcommand.
 - [ ] `env_fingerprint` and success-only latency (SPEC §8) are honoured from S1 — not retrofitted.
 
 ## Guardrails to land BEFORE any run against a live/shared target
@@ -55,9 +55,9 @@ Tasks:
 - [ ] Domain types incl. generic `SLO{metric,threshold,unit,comparator,at_rps}` (SPEC §3) and `env_fingerprint` field on `Run`.
 - [ ] Migrations for all SPEC §6 tables (create them now, fill them later).
 - [ ] `pgx` `ResultStore` adapter: `SaveRun`/`Get`/`SetBaseline`/`Baseline`.
-- [ ] `plumber target add|list` subcommand.
+- [ ] `vantage target add|list` subcommand.
 
-**Green bar:** `plumber target add --name sluice-ohlc …` persists; `plumber target list` prints it; `go test ./...` green.
+**Green bar:** `vantage target add --name sluice-ohlc …` persists; `vantage target list` prints it; `go test ./...` green.
 **Commit boundary:** one skeleton commit; migrations in their own commit.
 
 ## S1 — Black-box load → number with variance  *(Phase 1: Measure; MVP; L)*
@@ -76,9 +76,9 @@ Tasks:
 - [ ] Warmup window discard; N repetitions → N `reps` rows.
 - [ ] `env_fingerprint` capture: host, colocation note, target row-counts/schema-version (via a pluggable probe; for Sluice, a small SQL count query).
 - [ ] Guardrails: allowlist check, rate ceiling, kill switch, mutating-refusal (SPEC §9).
-- [ ] `plumber run --target … --profile constant:rps=…,dur=…,warmup=… --reps N`.
+- [ ] `vantage run --target … --profile constant:rps=…,dur=…,warmup=… --reps N`.
 
-**Green bar:** `plumber run` against local Sluice prints `p50/p90/p99/p99.9` + error rate per rep and pooled, persists a Run with N reps and an env fingerprint. Point it at a deliberately-throttled stub and confirm the tail reflects queueing (coordinated-omission sanity check).
+**Green bar:** `vantage run` against local Sluice prints `p50/p90/p99/p99.9` + error rate per rep and pooled, persists a Run with N reps and an env fingerprint. Point it at a deliberately-throttled stub and confirm the tail reflects queueing (coordinated-omission sanity check).
 **Commit boundary:** driver, storage-of-reps, and CLI as separate commits; each green.
 
 ## S2 — SLO + Judge  *(Phase 1: SLO-first; MVP; S)*
@@ -91,9 +91,9 @@ Tests first:
 
 Tasks:
 - [ ] Pure `verdict.Judge`.
-- [ ] `plumber slo set` + judge wired into `plumber run` output.
+- [ ] `vantage slo set` + judge wired into `vantage run` output.
 
-**Green bar:** `plumber run` ends with a per-metric PASS/FAIL table against the target's SLOs.
+**Green bar:** `vantage run` ends with a per-metric PASS/FAIL table against the target's SLOs.
 **Commit boundary:** one commit (pure fn + CLI wiring).
 
 ## S3 — Baseline + Compare (bootstrap CI + guards)  *(Phase 3: prove; MVP — stop-and-use gate; M)*
@@ -106,33 +106,33 @@ Tests first:
 
 Tasks:
 - [ ] `verdict.Compare(baseline,candidate) → Delta{point, ci_low, ci_high, verdict}`.
-- [ ] `plumber baseline set <run>` and `plumber compare <candidate>`.
+- [ ] `vantage baseline set <run>` and `vantage compare <candidate>`.
 - [ ] Comparability + env-drift guards (SPEC §7/§8).
 
 **Green bar:** the full MVP round-trip (SPEC §13 MVP tier) works end-to-end on Sluice: run → judge → baseline → change code → re-run → `compare` prints `"p99 −220ms, 95% CI [180,255] → significant"`, and downgrades to `confounded` when you deliberately grow the staging table between runs.
 
 > ### ⛔ MVP CHECKPOINT — stop here and *use it*
-> Plumber now earns its keep. Run it on Sluice for real, fix an actual p99, log it in PROGRESS.md. Only greenlight S4+ after the black-box tier has proven useful (SPEC §11 MVP tier). Do not roll straight into the expensive tier.
+> Vantage now earns its keep. Run it on Sluice for real, fix an actual p99, log it in PROGRESS.md. Only greenlight S4+ after the black-box tier has proven useful (SPEC §11 MVP tier). Do not roll straight into the expensive tier.
 
 ## SD — One-step dev env + run (`make dev`)  *(infra, not a feature slice; gates the stop-and-use step; S)*
 
-**Goal:** a fresh clone (or a cold session) reaches a running Plumber against a local Postgres with **one command** — `make dev`. Today the path is manual: install Go/Docker yourself, hand-start a Postgres, export `PLUMBER_DATABASE_URL`, `make migrate`. That friction sits directly in front of the MVP checkpoint, so it lands **before** the real-Sluice round-trip.
+**Goal:** a fresh clone (or a cold session) reaches a running Vantage against a local Postgres with **one command** — `make dev`. Today the path is manual: install Go/Docker yourself, hand-start a Postgres, export `VANTAGE_DATABASE_URL`, `make migrate`. That friction sits directly in front of the MVP checkpoint, so it lands **before** the real-Sluice round-trip.
 
 **Scope decision:** the compose DB is for *running the CLI*; `make int` keeps testcontainers (S0 decision stands — don't fork the test harness). No secrets involved: local dev DSN only, which also keeps the review-#5 gate untouched.
 
 Checks first (script-level, not unit tests — the smoke check *is* the spec):
-- [ ] `scripts/dev-smoke.sh`: from a clean state, `make dev` exits 0 and `plumber target list` runs against the dev DB without manual env setup.
+- [ ] `scripts/dev-smoke.sh`: from a clean state, `make dev` exits 0 and `vantage target list` runs against the dev DB without manual env setup.
 - [ ] **Idempotent:** a second `make dev` on an already-up env exits 0 quickly (no re-create, no duplicate migrations — runner already guarantees the latter).
 - [ ] **Prereq failure is clean:** with Docker down, `make dev` fails with a one-line actionable message ("start Docker"), not a compose stack trace.
 
 Tasks:
 - [ ] `docker-compose.yml`: one pinned-version Postgres service with a healthcheck, non-default port to avoid clashing with a system Postgres.
-- [ ] `.env.example` with the matching `PLUMBER_DATABASE_URL`; `make dev` copies to `.env` if absent and sources it.
-- [ ] `make dev`: prereq check (go, docker) → `docker compose up -d --wait` → `plumber migrate` → `make build` → print next steps (`bin/plumber target add …`).
+- [ ] `.env.example` with the matching `VANTAGE_DATABASE_URL`; `make dev` copies to `.env` if absent and sources it.
+- [ ] `make dev`: prereq check (go, docker) → `docker compose up -d --wait` → `vantage migrate` → `make build` → print next steps (`bin/vantage target add …`).
 - [ ] `make dev-down` (stop, keep data) and `make dev-nuke` (stop + drop volume — destructive, named accordingly).
 - [ ] README Quickstart rewritten to lead with `make dev`.
 
-**Green bar:** on a machine with only Go + Docker, `git clone && make dev && bin/plumber target list` works end-to-end; smoke script green; re-run idempotent.
+**Green bar:** on a machine with only Go + Docker, `git clone && make dev && bin/vantage target list` works end-to-end; smoke script green; re-run idempotent.
 **Commit boundary:** compose + env in one commit; Make targets + smoke script in another; README in the last.
 
 ## S4 — Ramp + knee  *(Phase 1: the knee; M)*
@@ -146,7 +146,7 @@ Tests first:
 
 Tasks:
 - [ ] `ramp` profile in the driver.
-- [ ] Knee detector + `plumber run --profile ramp:…` output (latency + error curve, knee point).
+- [ ] Knee detector + `vantage run --profile ramp:…` output (latency + error curve, knee point).
 
 **Green bar:** ramp against Sluice prints the knee (rps at which p99 hockey-sticks) with the co-plotted error rate.
 **Commit boundary:** ramp profile, then knee detector.
@@ -164,7 +164,7 @@ Tasks:
 - [ ] Resolve F3 (OTLP store vs Jaeger/Tempo pull).
 - [ ] Trace-context injection in driver; capture tail trace IDs.
 - [ ] `ExemplarTraceSource` adapter; store exemplar + span tree.
-- [ ] `plumber run --white-box` populates exemplars; CLI prints a text span waterfall for the p99 exemplar.
+- [ ] `vantage run --white-box` populates exemplars; CLI prints a text span waterfall for the p99 exemplar.
 
 **Green bar:** white-box run on Sluice yields the p99 exemplar's span breakdown ("340ms of 380ms in one span").
 **Commit boundary:** injection, source adapter, storage, CLI — separate.
@@ -194,17 +194,17 @@ Tests first:
 - [ ] Renderer refuses to emit a *delta* verdict without a baseline (SPEC §8 scoping) but emits an SLO PASS/FAIL without one.
 
 Tasks:
-- [ ] **Markdown first** (SPEC §11). `plumber report <run> [--vs <baseline>]`.
+- [ ] **Markdown first** (SPEC §11). `vantage report <run> [--vs <baseline>]`.
 - [ ] **HTML** fast-follow (same model, HTML template).
 - [ ] **PDF deferred** — print-from-HTML later if ever needed (YAGNI-suspect).
 
-**Green bar:** `plumber report` produces a Markdown audit note you'd actually paste into a PR or a portfolio writeup.
+**Green bar:** `vantage report` produces a Markdown audit note you'd actually paste into a PR or a portfolio writeup.
 
 ---
 
 ## Definition of done
 
-- **Per slice:** tests-first written and green; `go test ./...` green; the slice's `plumber` subcommand works against Sluice (or a fixture where Sluice isn't the point); commits respect refactor/fix separation.
+- **Per slice:** tests-first written and green; `go test ./...` green; the slice's `vantage` subcommand works against Sluice (or a fixture where Sluice isn't the point); commits respect refactor/fix separation.
 - **MVP (S0–S3):** the SPEC §13 MVP round-trip works on Sluice and has been *used* to move a real p99 (logged in PROGRESS.md). This is the bar that matters.
 - **Full (S0–S7):** SPEC §13 full loop — knee curve, white-box exemplar breakdown, exported report — as opt-in depth, greenlit only after MVP has earned it.
 

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Mode is how Plumber observes a Target: from the wire (black-box) or with
+// Mode is how Vantage observes a Target: from the wire (black-box) or with
 // server-side instrumentation for tail attribution (white-box). SPEC §5/§8.
 type Mode string
 
@@ -26,7 +26,7 @@ func (m Mode) Valid() bool {
 	}
 }
 
-// Target is a system Plumber is authorized to measure. It is a pure value; the
+// Target is a system Vantage is authorized to measure. It is a pure value; the
 // blast-radius flags are enforced at the driver's entry path (SPEC §9, S1), but
 // they live on the Target so that enforcement has data to act on.
 //

@@ -48,7 +48,7 @@ func NewConstantProfile(rps int, duration, warmup time.Duration) (LoadProfile, e
 func (p LoadProfile) MeasuredWindow() time.Duration { return p.Duration - p.Warmup }
 
 // String renders the profile in the CLI's own flag syntax, so a run's profile is
-// copy-pasteable back into `plumber run --profile`.
+// copy-pasteable back into `vantage run --profile`.
 func (p LoadProfile) String() string {
 	return fmt.Sprintf("%s:rps=%d,dur=%s,warmup=%s", p.Kind, p.RPS, p.Duration, p.Warmup)
 }

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"plumber/internal/domain"
-	"plumber/internal/hist"
-	"plumber/internal/ports"
-	"plumber/internal/verdict"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/hist"
+	"github.com/tomtomtomdev/vantage/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/verdict"
 )
 
 // CompareService orchestrates the S3 verdict flavour: designate a baseline and

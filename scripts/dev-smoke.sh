@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SD smoke check — this script IS the spec for `make dev` (PLAN §SD):
-#   1. `make dev` exits 0: Postgres up, migrations applied, bin/plumber built.
-#   2. `plumber target list` runs against the dev DB with no manual env setup
+#   1. `make dev` exits 0: Postgres up, migrations applied, bin/vantage built.
+#   2. `vantage target list` runs against the dev DB with no manual env setup
 #      (the .env `make dev` created is the only config source).
 #   3. A second `make dev` on the already-up env is idempotent: exit 0, fast,
 #      no re-create, no duplicate migrations.
@@ -16,7 +16,7 @@ echo "== dev-smoke 2/3: CLI reaches the dev DB (no manual env) =="
 set -a
 . ./.env
 set +a
-./bin/plumber target list
+./bin/vantage target list
 
 echo "== dev-smoke 3/3: second make dev is idempotent =="
 start=$(date +%s)

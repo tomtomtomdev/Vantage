@@ -6,12 +6,12 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"plumber/internal/adapters/store"
-	"plumber/internal/app"
+	"github.com/tomtomtomdev/vantage/internal/adapters/store"
+	"github.com/tomtomtomdev/vantage/internal/app"
 )
 
 // newSLOCmd is the `slo` command group: declare and list the thresholds a target
-// is judged against (SPEC §3). SLOs are declared before a run; `plumber run` then
+// is judged against (SPEC §3). SLOs are declared before a run; `vantage run` then
 // renders PASS/FAIL against them.
 func newSLOCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -34,7 +34,7 @@ func newSLOSetCmd() *cobra.Command {
 		Use:   "set <target-name>",
 		Short: "Declare an SLO (one per metric; re-setting replaces it).",
 		Long: "Declare a threshold a target is judged against, e.g.\n" +
-			"  plumber slo set sluice --metric p99 --threshold 150 --unit ms --comparator '<=' --at-rps 200\n" +
+			"  vantage slo set sluice --metric p99 --threshold 150 --unit ms --comparator '<=' --at-rps 200\n" +
 			"Metrics: p50 p90 p99 p99.9 max (ms), error_rate (%), throughput (rps).",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {

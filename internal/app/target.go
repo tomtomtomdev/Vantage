@@ -6,8 +6,8 @@ package app
 import (
 	"context"
 
-	"plumber/internal/domain"
-	"plumber/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/ports"
 )
 
 // TargetService is the register/list use case for targets. It owns the rule that

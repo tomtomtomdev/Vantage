@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"plumber/internal/domain"
-	"plumber/internal/ports"
+	"github.com/tomtomtomdev/vantage/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/ports"
 )
 
 // SLOService is the declare/list use case for a target's SLOs (SPEC §3). It owns

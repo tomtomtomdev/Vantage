@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 // LoadDriver generates load against a Target and measures one repetition of a

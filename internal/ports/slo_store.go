@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 // SLOStore persists a target's declared SLOs and reads them back at judge time

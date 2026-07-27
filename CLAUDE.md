@@ -1,10 +1,10 @@
-# Plumber — CLAUDE.md
+# Vantage — CLAUDE.md
 
 **What this is:** the contract every coding session and PR obeys. Read it before writing code. It consolidates the conventions implied by SPEC.md v3 and PLAN.md into enforceable rules, so they don't drift at 11pm.
 **Companions:** SPEC.md (what & why), PLAN.md (slices & order), PROGRESS.md (where we are). Installed skills in force (`.claude/skills/`): `backend-audit-refactor`, `perf-measurement-rigor`, `go-idioms` — see §0 for when each fires.
 **Stack:** Go 1.22+, Postgres (`pgx/v5`), `cobra` CLI. Forks resolved: build the Go driver (F1), Go+Postgres (F2).
 
-> **Note on the Go conventions below (§4, §7):** the `go-idioms` skill is now installed as the **correctness reference** (goroutine lifecycle, context/cancellation, error wrapping, Clean-Arch-in-Go). This doc stays the **project-specific source of truth** — where the two overlap, CLAUDE wins because it names Plumber's actual packages and invariants. After S0–S3, fold any patterns the build proved back into the skill (§10).
+> **Note on the Go conventions below (§4, §7):** the `go-idioms` skill is now installed as the **correctness reference** (goroutine lifecycle, context/cancellation, error wrapping, Clean-Arch-in-Go). This doc stays the **project-specific source of truth** — where the two overlap, CLAUDE wins because it names Vantage's actual packages and invariants. After S0–S3, fold any patterns the build proved back into the skill (§10).
 
 ---
 
@@ -25,7 +25,7 @@ These compose: building the load driver (S1) fires `go-idioms` (concurrency) **a
 ## 1. Repo layout (SPEC §5)
 
 ```
-cmd/plumber/        composition root — wiring + cobra commands, the ONLY place adapters meet domain
+cmd/vantage/        composition root — wiring + cobra commands, the ONLY place adapters meet domain
 internal/
   domain/           Target, SLO, LoadProfile, Run, Repetition, Result, Baseline  (pure)
   verdict/          Judge, Compare (pure; the significance math)
@@ -56,7 +56,7 @@ The idiom is different from Swift; the principle is the same. Dependencies point
 
 - **Ports are defined by the consumer, not the implementer.** The interface `ResultStore` lives in `internal/ports` (owned by the domain/app side) because the *app* declares what it needs. The `store` adapter *implements* it. This is "accept interfaces, return structs" applied architecturally: the pgx adapter returns a concrete `*PgStore` that happens to satisfy the port.
 - **Domain and verdict are pure.** No I/O, no clock, no randomness reaching in except through a port (`Clock`; the bootstrap's RNG is injected/seedable for deterministic tests). If `verdict.Compare` needs the current time or a DB, the design is wrong — pass data in.
-- **No DI framework.** Wiring happens by hand in `cmd/plumber` (the composition root): construct adapters, inject them into the app via constructors, done. Constructor injection everywhere; no globals, no service locator, no `init()` magic.
+- **No DI framework.** Wiring happens by hand in `cmd/vantage` (the composition root): construct adapters, inject them into the app via constructors, done. Constructor injection everywhere; no globals, no service locator, no `init()` magic.
 - **Enforce the boundary with a test, not discipline.** `internal/domain` and `internal/verdict` get an arch-test that scans their import graph and fails on any `adapters/`, `pgx`, `cobra`, or `net/http` import. Use `golangci-lint`'s `depguard` (deny those imports in those packages) as the fast gate, plus a small `go/packages` test as the belt-and-braces. This is S0 work and it's non-negotiable — the boundary that isn't tested will erode by S3.
 
 **Why this shape here specifically:** the significance math (`verdict.Compare`) is the crown jewel and the thing most worth unit-testing exhaustively; keeping it pure means it's tested with fixtures in microseconds and never needs a database to prove a statistics bug is fixed.
@@ -126,7 +126,7 @@ Map: each `perf-measurement-rigor` cardinal sin → a failing test that reproduc
 
 ## 9. Definition of done (per PLAN)
 
-A slice is done when: its tests-first suite is green; `go test -race ./...`, lint, gofmt, arch-test, and diff-coverage all pass; the slice's `plumber` subcommand works against Sluice (or a fixture); commits respect refactor/fix separation; and PROGRESS.md has an entry. MVP (S0–S3) is done when the SPEC §13 MVP round-trip has moved a real Sluice p99, logged in PROGRESS.
+A slice is done when: its tests-first suite is green; `go test -race ./...`, lint, gofmt, arch-test, and diff-coverage all pass; the slice's `vantage` subcommand works against Sluice (or a fixture); commits respect refactor/fix separation; and PROGRESS.md has an entry. MVP (S0–S3) is done when the SPEC §13 MVP round-trip has moved a real Sluice p99, logged in PROGRESS.
 
 ## 10. Extraction note
 

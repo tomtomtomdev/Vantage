@@ -1,8 +1,8 @@
-# Plumber — Makefile. See CLAUDE.md §7 for the contract these targets satisfy.
+# Vantage — Makefile. See CLAUDE.md §7 for the contract these targets satisfy.
 # CI blocks (not suggests) on: test -race, lint, gofmt, arch-test, diff-coverage.
 
 GO         ?= go
-BINARY     := plumber
+BINARY     := vantage
 PKG        := ./...
 VERSION    := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS    := -ldflags "-X main.version=$(VERSION)"
@@ -15,15 +15,15 @@ COVERPROF  := coverage.out
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## //' | awk -F': ' '{printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2}'
 
-## build: compile the plumber binary into ./bin
+## build: compile the vantage binary into ./bin
 .PHONY: build
 build:
-	$(GO) build $(LDFLAGS) -o bin/$(BINARY) ./cmd/plumber
+	$(GO) build $(LDFLAGS) -o bin/$(BINARY) ./cmd/vantage
 
 ## run: build and run (pass ARGS="target list")
 .PHONY: run
 run:
-	$(GO) run $(LDFLAGS) ./cmd/plumber $(ARGS)
+	$(GO) run $(LDFLAGS) ./cmd/vantage $(ARGS)
 
 ## test: unit tests, race detector on — the default gate (CLAUDE §4/§6)
 .PHONY: test
@@ -64,7 +64,7 @@ lint:
 .PHONY: fmt
 fmt:
 	gofmt -w -s .
-	@command -v goimports >/dev/null 2>&1 && goimports -w -local plumber . || true
+	@command -v goimports >/dev/null 2>&1 && goimports -w -local vantage . || true
 
 ## fmt-check: fail if anything is unformatted (CI gate)
 .PHONY: fmt-check
@@ -76,10 +76,10 @@ fmt-check:
 tidy:
 	$(GO) mod tidy
 
-## migrate: apply numbered SQL migrations (needs PLUMBER_DATABASE_URL)
+## migrate: apply numbered SQL migrations (needs VANTAGE_DATABASE_URL)
 .PHONY: migrate
 migrate:
-	$(GO) run $(LDFLAGS) ./cmd/plumber migrate
+	$(GO) run $(LDFLAGS) ./cmd/vantage migrate
 
 ## dev: one-step dev env — compose Postgres up, migrate, build (PLAN §SD)
 # Prereq failures are one-line and actionable, not compose stack traces.
@@ -92,13 +92,13 @@ dev:
 	@docker info >/dev/null 2>&1 || { echo "make dev: Docker daemon not running — start Docker"; exit 1; }
 	@test -f .env || { cp .env.example .env && echo "make dev: created .env from .env.example"; }
 	@docker compose up -d --wait || { echo "make dev: postgres failed to come up — try 'docker compose logs postgres'"; exit 1; }
-	@set -a; . ./.env; set +a; $(GO) run $(LDFLAGS) ./cmd/plumber migrate
+	@set -a; . ./.env; set +a; $(GO) run $(LDFLAGS) ./cmd/vantage migrate
 	@$(MAKE) --no-print-directory build
 	@echo ""
 	@echo "dev env ready. Next:"
 	@echo "  set -a; . ./.env; set +a                                # export the dev DSN"
-	@echo "  bin/plumber target add sluice --url http://localhost:8080 --allowlisted"
-	@echo "  bin/plumber target list"
+	@echo "  bin/vantage target add sluice --url http://localhost:8080 --allowlisted"
+	@echo "  bin/vantage target list"
 
 ## dev-down: stop the dev Postgres, keep its data volume
 .PHONY: dev-down

@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	"plumber/internal/adapters/store"
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/adapters/store"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 func TestSetAndListSLOs(t *testing.T) {

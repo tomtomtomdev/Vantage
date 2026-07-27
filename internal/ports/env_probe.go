@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"plumber/internal/domain"
+	"github.com/tomtomtomdev/vantage/internal/domain"
 )
 
 // EnvProbe captures the environment fingerprint recorded on every Run so Compare

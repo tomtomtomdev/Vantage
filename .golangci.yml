@@ -21,7 +21,7 @@ linters:
             - "**/internal/domain/**"
             - "**/internal/verdict/**"
           deny:
-            - pkg: plumber/internal/adapters
+            - pkg: github.com/tomtomtomdev/vantage/internal/adapters
               desc: "domain/verdict must not import adapters — dependencies point inward (CLAUDE §3)"
             - pkg: github.com/jackc/pgx
               desc: "domain/verdict must be pure — no pgx"

@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/spf13/cobra"
 
-	"plumber/internal/platform"
+	"github.com/tomtomtomdev/vantage/internal/platform"
 )
 
 // newRootCmd assembles the command tree. Each subcommand connects its own
@@ -14,7 +14,7 @@ import (
 // database.
 func newRootCmd() *cobra.Command {
 	root := &cobra.Command{
-		Use:           "plumber",
+		Use:           "vantage",
 		Short:         "An audit harness that proves a backend got faster (SPEC).",
 		Version:       version,
 		SilenceUsage:  true, // a runtime error is not a usage error; don't dump help
